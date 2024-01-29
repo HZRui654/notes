@@ -67,6 +67,25 @@ Git 是免费，开源的分布式版本控制系统，可以有效，高速地�
 
 
 
+## 初始设置
+
+*   设置姓名和邮箱地址
+
+    ```bash
+    git config --global user.name "Draven"
+    git config --global user.email "your_email@example.com"
+    ```
+
+*   提高命令输出的可读性性
+
+    ```bash
+    git config --global color.ui auto
+    ```
+
+以上设置均可在 `~/.gitconfig` 中查看和修改。
+
+
+
 ## 创建账户
 
 1. 在 [`GitHub`](https://github.com/) 上注册账户并登陆；
