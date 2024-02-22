@@ -102,7 +102,7 @@ p, h1, h2, h3, h4, h5, h6 {
 ```css
 /* 单行文字省略 */
 p {
-  width: 100%;
+  white-space: nowrap
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -110,7 +110,6 @@ p {
 
 /* 超过 2 行文字后省略 */
 p {
-  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
