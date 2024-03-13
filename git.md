@@ -693,21 +693,29 @@ SSH 则用的是 22 端口，也可以对 repo 根据权限进行读写，但是
 其中，header 是必需的，body 和 footer 可以省略。
 不管是哪一个部分，任何一行都不得超过72个字符（或100个字符）。这是为了避免自动换行影响美观。
 
+可以使用 [commitlint](https://commitlint.js.org/guides/getting-started.html) + [@commitlint/cz-commitlint](https://www.npmjs.com/package/@commitlint/cz-commitlint) 。
+
 
 
 ### Header
 
 Header 部分只有一行，包括三个字段：`type`（required）、`scope`（optional）、`subject`（optional）。
 
-- type：用于说明 commit 的类别，只允许使用下面 7 个标识。
+- type：用于说明 commit 的类别，只允许使用下面几个标识。
 
-  - feat：新功能（feature）
-  - fix：修补 bug
-  - docs：文档（documentation）
-  - style：格式（不影响代码运行的变动）
-  - refactor：重构（既不是新增功能，也不是修改 bug 的代码改动）
-  - test：增加测试
-  - chore：构建过程或辅助工具的变动
+  | 类型     | 描述                                              |
+  | -------- | ------------------------------------------------- |
+  | build    | 发布版本                                          |
+  | chore    | 改变构建流程、或者增加依赖库、工具等              |
+  | ci       | 持续集成修改                                      |
+  | docs     | 文档修改                                          |
+  | feat     | 新功能（feature）                                 |
+  | fix      | 修补 bug                                          |
+  | perf     | 优化相关，比如提升性能、体验                      |
+  | refactor | 重构（既不是新增功能，也不是修改 bug 的代码改动） |
+  | revert   | 回滚到上一个版本                                  |
+  | style    | 格式（不影响代码运行的变动）                      |
+  | test     | 测试用例修改                                      |
 
 - scope：用于说明 commit 影响的范围，每个项目对这个范围的定义可能不同。
 
