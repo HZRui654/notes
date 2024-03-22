@@ -153,6 +153,24 @@ npm install @typescript-eslint/eslint-plugin @typescript-eslint/parser -D
 
 
 
+### UnoCSS
+
+``` bash
+npm install -D @unocss/eslint-config
+```
+
+``` js
+{
+  extends: {
+    '@unocss'
+  }
+}
+```
+
+
+
+
+
 ### 兼容 Prettier
 
 ESLint 与 Prettier 会在一些规则上有冲突，导致无法正常格式化，需要进行兼容。
@@ -661,6 +679,8 @@ npm install stylelint-selector-bem-pattern -D
 ```
 
 ``` js
+const nameRegExpString = '[a-z0-9]+(-[a-z0-9]+)*'
+
 module.exports = {
   rules: [
     // 使用注释指定 block 名称
@@ -669,7 +689,7 @@ module.exports = {
       preset: 'bem',
 			
     	// 默认 '^[-_a-zA-Z0-9]+$'
-    	componentName: '^[a-z0-9]+(-[a-z0-9]+)*$'
+    	componentName: `^${nameRegExpString}$`,
     
     	/**
        * 自定义模式规则
@@ -678,10 +698,10 @@ module.exports = {
        */
     	componentSelectors: {
         // 只初始的选择器规则（可以理解为外层的class规则）
-        initial: '^\\.{componentName}(?:__{componentName})?(?:--{componentName})?$',
+        initial: `^\\.{componentName}(?:__${nameRegExpString})?(?:--${nameRegExpString})?$`,
         // 可以理解为外层以内的选择器的规则
         // 如果不指定，则跟 initial 同样的规则
-        combined: '^\\.{componentName}(((?:__{componentName})(?:--{componentName})?)|(?:--{componentName}))$'
+        combined: `^\\.{componentName}(((?:__${nameRegExpString})(?:--${nameRegExpString})?)|(?:--${nameRegExpString}))$`
     	},
  
       // utils 类名
@@ -754,6 +774,8 @@ Utilities ：
 - `.stylelintrc.js`
 
   ``` js
+  const nameRegExpString = '[a-z0-9]+(-[a-z0-9]+)*'
+  
   module.exports = {
     extends: [
       'stylelint-config-recommended-scss',
@@ -781,11 +803,16 @@ Utilities ：
       ],
       'plugin/selector-bem-pattern': {
         preset: 'bem',
+        componentName: `^${nameRegExpString}$`,
+        componentSelectors: {
+          initial: `^\\.{componentName}(?:__${nameRegExpString})?(?:--${nameRegExpString})?$`,
+          combined:
+            `^\\.{componentName}(((?:__${nameRegExpString})(?:--${nameRegExpString})?)|(?:--${nameRegExpString}))$`
+        },
         utilitySelectors: '^\\.u-[a-zA-z]+$',
       },
       'selector-class-pattern': null,
-      'value-keyword-case': null,
-      'color-hex-case': 'lower'
+      'value-keyword-case': null
     },
     cache: true
   }
@@ -1047,6 +1074,22 @@ npm install husky -D
 ``` bash
 npm prepare
 ```
+
+> Tips：
+>
+> 使用 GUI + node 版本管理器（ e.g. sourceTree + Volta ），在 commit 的时候可能会出现 `command not found` 的报错，这种情况下是 GUI 无法正确加载到 node 版本管理器下 node 的路径。
+>
+> 可以在 `~/.config/husky/init.sh` 中把 node 版本管理器的路径配好，husky 执行命令前都会先执行这个文件。
+>
+> ``` bash
+> export PATH="/Users/username/.volta/bin:$PATH"
+> ```
+>
+> 路径可以通过以下命令查询：
+>
+> ``` bash
+> which volta
+> ```
 
 
 
