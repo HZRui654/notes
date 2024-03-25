@@ -55,24 +55,6 @@ npm install eslint -D
 
 
 
-### config 代码提示
-
-使用 `eslint-define-config` 给 eslint js 文件提供代码提示
-
-``` bash
-npm install eslint-define-config -D
-```
-
-``` js
-const { defineConfig } = require('eslint-define-config')
-
-module.exports = defineConfig({
-  // ...
-})
-```
-
-
-
 ### 初始化
 
 `.eslintrc.js`
@@ -156,7 +138,7 @@ npm install @typescript-eslint/eslint-plugin @typescript-eslint/parser -D
 ### UnoCSS
 
 ``` bash
-npm install -D @unocss/eslint-config
+npm install @unocss/eslint-config -D
 ```
 
 ``` js
@@ -207,17 +189,16 @@ npm install eslint-plugin-prettier eslint-config-prettier -D
 
   ``` shell
   npm install eslint -D
-  npm install eslint-define-config -D
   npm install eslint-plugin-vue vue-eslint-parser -D
   npm install @typescript-eslint/eslint-plugin @typescript-eslint/parser -D
+  npm install @unocss/eslint-config -D
+  npm install eslint-plugin-prettier eslint-config-prettier -D 
   ```
 
 - `.eslintrc.js`
 
   ``` js
-  const { defineConfig } = require('eslint-define-config')
-  
-  module.exports = defineConfig({
+  module.exports = {
     root: true,
     env: {
       browser: true,
@@ -226,6 +207,7 @@ npm install eslint-plugin-prettier eslint-config-prettier -D
     },
     extends: [
       'eslint:recommended',
+      '@unocss',
       'plugin:vue/vue3-recommended',
       'plugin:@typescript-eslint/recommended',
       'plugin:prettier/recommended'
@@ -256,9 +238,9 @@ npm install eslint-plugin-prettier eslint-config-prettier -D
       // 可以使用 @ts-ignore 等注释
       '@typescript-eslint/ban-ts-comment': 'off'
     }
-  })
+  }
   ```
-
+  
 - `.eslintignore`
 
   ``` 
@@ -469,6 +451,12 @@ npm install prettier -D
 
 ### 总结
 
+- 安装
+
+  ``` bash
+  npm install prettier -D
+  ```
+  
 - `.prettierrc.js`
 
   ``` js
@@ -771,6 +759,16 @@ Utilities ：
 
 ### 总结
 
+- 安装
+
+  ``` bash
+  npm install stylelint -D
+  npm install stylelint-config-recommended-scss stylelint-config-prettier-scss postcss-scss -D
+  npm install stylelint-config-recommended-vue postcss-html -D
+  npm install stylelint-config-recess-order -D
+  npm install stylelint-selector-bem-pattern -D
+  ```
+  
 - `.stylelintrc.js`
 
   ``` js
@@ -1161,7 +1159,10 @@ npx commitlint --edit
       "vue.volar",
       "dbaeumer.vscode-eslint",
       "esbenp.prettier-vscode",
-      "stylelint.vscode-stylelint"
+      "stylelint.vscode-stylelint",
+      
+      // 如果有使用 `unocss` ，可添加
+      "antfu.unocss"
     ]
   }
   ```
