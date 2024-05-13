@@ -522,6 +522,115 @@ git reset --hard <hash>
 
 
 
+### git tag
+
+给某次提交打上标签。
+
+> 标签规范：
+>
+> `v1.0.0` ：表示主版本号为 1、次版本号为 0 、修订版本号为 0 。
+
+- **列出标签**
+
+  `-l` / `--list` 列出已有标签，也可以加上正则进行筛选列出。
+
+  ``` bash
+  git tag -l
+  git tag -l "v1.8.5*"
+  ```
+
+- **创建标签**
+
+  标签有两种：**轻量标签（ `lightweight` ）**和 **附注标签（ `annotated` ）**。
+
+  `轻量标签`很像一个不会改变的分支 - 它只是某个特定提交的引用。
+
+  `附注标签` 是存储在 Git 数据库中的一个完整对象，包含打标签者的信息，etc。可以使用 `GNU Privacy Guard ( GPG )` 签名并校验的。
+
+  > 通常建议创建附注标签，如果只是想要一个临时标签，或者不想保存这些信息，也可以使用轻量标签。
+
+- **附注标签**
+
+  `-a` 便可生成附注标签，`-m` 可以添加提交信息。
+
+  `git show <tagName>` 可以查看对应 tag 的标签信息和提交信息。
+
+  ``` bash
+  git tag -a v1.4 -m "my version 1.4" 
+  ```
+
+  ``` bash
+  git show v1.4
+  ```
+
+- **轻量标签**
+
+  直接使用 `git tag` ，不添加 `-a` 等选项，便可生成轻量标签。
+
+  ``` bash
+  git tag v1.4-lw
+  ```
+
+- **后期打标签**
+
+  根据以前提交记录的哈希值，可以给以前的提交打标签。
+
+  ``` bash
+  git tag -a v1.2 9fecb02
+  ```
+
+- **共享标签**
+
+  默认情况下，`git push` 并不会传送标签到远程，创建完标签后必须显式地推送标签 `git push origin <tagName>` 。
+
+  ``` bash
+  git push origin v1.5
+  ```
+
+  一次性推送很多标签 `--tags`
+
+  ``` bash
+  git push origin --tags
+  ```
+
+- **删除标签**
+
+  删除本地仓库标签 `-d` ：
+
+  ``` bash
+  git tag -d v1.4
+  ```
+
+  删除远程仓库标签，有两种方式：
+
+  ``` bash
+  git push origin :refs/tags/v1.4
+  ```
+
+  ``` bash
+  git push origin --delete <tagName>
+  ```
+
+- **检出标签**
+
+  使用 `git checkout` 命令，但是会使仓库指针处于 `分离头指针（ detached HEAD ）` 的状态，会有些不好的副作用。
+
+  ``` bash
+  git checkout v2.0.0
+  ```
+
+  > 在`分离头指针`状态下，如果做了某些更改再提交，标签不会发生变化，并且新提交不属于任何分支，将无法访问，除非通过确切的提交哈希才能访问。
+
+  所以要修复旧版本错误，通常需要新建一个分支，再提交：
+
+  ``` bash
+  git checkout -b version2 v2.0.0
+  ```
+
+  
+
+
+
 ## .gitignore
 
 Git 忽略文件。
@@ -815,3 +924,31 @@ Body 部分格式是固定的，必须写成 `This reverts commit <hash>` ，其
 
 
 
+## Work flow
+
+[Git flow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)
+
+- **Base**
+
+  基础需要两条分支，都是需要保护不可删除的。
+
+  - `main` ：生产分支。`release` / `hotfix` 分支合并到该分支后打 `tag` 。
+  - `develop` ：开发分支，从 `main` 分支检出，包含了生产的所有版本以及未来要发布的新版本。
+
+- **Feature**
+
+  添加新功能。
+
+  `feature_branch` ：从 `develop` 检出，开发完新功能以后合并（ 合并前先 `Rebase` ）回 `develop` 分支。
+
+- **Release**
+
+  发布生产需要单独检出一条预生产分支。
+
+  `release/<tagName>` ：`develop` 合并完 `feature_branch` 新功能后从 `develop` 分支检出，检出后在该分支上只能进行 bug 或者 doc 的修改，不能再添加新功能，测试没有问题就合并到 `main` 发布生产，并且再合并回 `develop` 分支。
+
+- **Hotfix**
+
+  热修复当天生产出现的问题。
+
+  `hotfix_branch` ：从生产分支 `main` 检出，修改完 bug 后合并回 `main` ，并且需要同步合并到 `develop` 。
