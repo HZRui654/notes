@@ -34,3 +34,14 @@ volta pin yarn@1.19
 
 ```
 
+
+
+## 查看列表
+
+`volta list [tool]`
+
+``` bash
+volta list node
+
+```
+

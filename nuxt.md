@@ -124,6 +124,67 @@ const appConfig = useAppConfig()
 
 
 
+## Typescript
+
+默认不会在 `nuxi dev` 和 `nuxi build` 的时候进行类型检查，如果有需要，请按以下配置：
+
+先安装需要的依赖：
+
+``` bash
+npm install --save-dev vue-tsc typescript
+
+```
+
+安装完使用以下命令即可以检查类型：
+
+``` bash
+npx nuxi typecheck
+
+```
+
+启用一下配置可以在打包时检查类型：
+
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  typescript: {
+    typeCheck: true,
+    // strict: false, // 默认开启严格模式
+    // 可以使用这个属性来拓展 `./.nuxt/tsconfig.json`, 配置完后记得重新 install 生成 `./.nuxt/tsconfig.json`
+    tsConfig: {
+      compilerOptions: {}
+    }
+  }
+})
+
+```
+
+> `./.nuxt/tsconfig.json` 中的配置，会被根目录下的 `tsconfig.json` 覆盖，所以你可以安心的在 `tsconfig.json` 定义你的 ts 规范。但是值得注意的是 nuxt 预定义了许多 `path` ，所以请不要覆盖 `path` 字段。如果有需要可以在配置中的 **`alias`** 添加你的 `path` ，nuxt 会自动解析。
+
+
+
+### alias
+
+``` javascript
+// nuxt.config.ts
+import { fileURLToPath, URL } from 'node:url'
+
+export default defineNuxtConfig({
+  alias: {
+    images: fileURLToPath(new URL('./assets/images', import.meta.url)),
+    style: fileURLToPath(new URL('./assets/style', import.meta.url)),
+    data: fileURLToPath(new URL('./assets/other/data', import.meta.url))
+  },
+  // 也可以使用这个属性来拓展 `./.nuxt/tsconfig.json`
+  tsConfig: {
+    compilerOptions: {}
+  }
+})
+
+```
+
+
+
 ## Views
 
 - `app.vue` ：入口。
@@ -143,6 +204,18 @@ const appConfig = useAppConfig()
 
 - `pages/` ：其中每个文件代表了各自路由页面。新建 `pages/index.vue`（首页，会自动引入） 并且将 `<NuxtPage />` 组件添加到 `app.vue` 即可启用。
 
+  > `Pages/ ` 下的 page ，必须只包含单个根 element 才能保证 route 正常切换，否则页面无法正常 rendered 。
+  >
+  > ``` vue
+  > <template>
+  >   <div>
+  >     <!-- This page correctly has only one single root element -->
+  >     Page content
+  >   </div>
+  > </template>
+  > 
+  > ```
+
 - `layouts/` ：部分页面的公共布局。`layouts/default.vue` 会被自动使用（如果只有一种 `layout` ，建议直接使用 `app.vue` ）。
 
   ``` vue
@@ -156,7 +229,6 @@ const appConfig = useAppConfig()
   
   ```
 
-  
 
 
 
@@ -183,7 +255,7 @@ export default defineNitroPlugin((nitroApp) => {
 ## Assets
 
 - `public/` ：会原封不动的在打包文件中，开发时可以直接通过 `/` 访问其中的文件。
-- `assets/` ：存放需要经过打包工具处理的静态资源，例如 `scss` ，`font` ，`svg` 等。没有硬性要求用 `assets` 命名，只是一般都用这个。开发时可以通过 `~/`访问其中的文件。
+- `assets/` ：存放需要经过打包工具处理的静态资源，例如 `scss` ，`font` ，`svg` 等。没有硬性要求用 `assets` 命名，只是一般都用这个。开发时可以通过 `~/` 访问其中的文件。
 
 
 
@@ -201,9 +273,9 @@ export default defineNuxtConfig({
       link: [{ rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css' }]
     }
   },
+  // css: ['~/assets/css/main.css']
+  // css: ['animate.css'] // 第三方 UI 库
   vite: {
-    // css: ['~/assets/css/main.css']
-    // css: ['animate.css'] // 第三方 UI 库
     css: {
       preprocessorOptions: {
         scss: {
@@ -271,26 +343,98 @@ export default defineNuxtConfig({
 
 
 
-### `<NuxtLink>`
+### Navigation
 
-用于页面跳转。
+- 使用 `<NuxtLink>` 标签跳转。
 
-**如果页面有该标签，那么 `Nuxt` 会预加载对应目标页面的内容**。
+  **如果页面有该标签，那么 `Nuxt` 会预加载对应目标页面的内容**。
+
+  ``` vue
+  <template>
+    <header>
+      <nav>
+        <ul>
+          <li><NuxtLink to="/about">About</NuxtLink></li>
+          <li><NuxtLink to="/posts/1">Post 1</NuxtLink></li>
+          <li><NuxtLink to="/posts/2">Post 2</NuxtLink></li>
+        </ul>
+      </nav>
+    </header>
+  </template>
+  
+  ```
+
+  如果添加 `external` 属性，则会渲染为普通 `a` 标签，可以用于跳转外部链接
+
+  ``` vue
+  <template>
+    <NuxtLink to="/the-important-report.pdf" external>
+      Download Report
+    </NuxtLink>
+    <!-- <a href="/the-important-report.pdf"></a> -->
+  </template>
+  
+  ```
+
+- 使用 `navigateTo()` 函数跳转。
+
+  ``` vue
+  <script setup lang="ts">
+  const name = ref('');
+  const type = ref(1);
+  
+  function navigate(){
+    return navigateTo({
+      path: '/search',
+      query: {
+        name: name.value,
+        type: type.value
+      }
+    })
+  }
+  </script>
+  
+  ```
+
+  > 确保使用 `await` 或者在函数中 `return` 的方式调用 `navigateTo` 。
+
+
+
+### Dynamic Routes
+
+在 `pages/` 下的页面，把文件名的任意一部分包裹在中括号 `[]` 中，就能变成动态路由。
+
+如果想要使动态路由的参数变成可选参数，那么需要两个中括号 `[[]]` 包裹。e.g. `~/pages/[[slug]]/index.vue` 或者 
+
+`~/pages/[[slug]].vue` 都可以匹配 `/` 和 `/test` 。
+
+例子：
+
+``` bash
+-| pages/
+---| index.vue
+---| users-[group]/
+-----| [id].vue
+
+```
 
 ``` vue
 <template>
-  <header>
-    <nav>
-      <ul>
-        <li><NuxtLink to="/about">About</NuxtLink></li>
-        <li><NuxtLink to="/posts/1">Post 1</NuxtLink></li>
-        <li><NuxtLink to="/posts/2">Post 2</NuxtLink></li>
-      </ul>
-    </nav>
-  </header>
+  <p>
+    <!-- 可以直接通过 $route 获取到动态参数 -->
+    {{ $route.params.group }} - {{ $route.params.id }}
+  </p>
 </template>
 
 ```
+
+``` html
+<!-- 当路由为 `/user-admins/123` 时 -->
+<p>admins - 123</p>
+
+```
+
+> 如果同时有动态路由和命名路由，会优先匹配命名路由。
 
 
 
@@ -305,6 +449,53 @@ const route = useRoute()
 // When accessing /posts/1, route.params.id will be 1
 console.log(route.params.id)
 </script>
+
+```
+
+
+
+### Route Groups
+
+可以把路由归在一个 group 下，然后生成 url 时不生成统一的前缀。只需要将这些路由放在同一个 folder 下，然后 folder 名称用 `()` 包裹，这样在生成 url 时，nuxt 会忽略该 folder name 。
+
+``` bash
+-| pages/
+---| index.vue
+---| (marketing)/
+-----| about.vue
+-----| contact.vue
+
+```
+
+上面的结构，会生成 `/` ，`/about` 和 `/contact` 。
+
+
+
+### Custom Metadata
+
+在 page 中使用 `definePageMeta` ，使用限制和 `defineProps` 和 `defineEmits` 一致。
+
+``` vue
+<script setup lang="ts">
+  definePageMeta({
+    title: 'My home page'
+  })
+</script>
+
+```
+
+除了已经预设好的一些属性，也可以自定义属性，给自定义属性添加类型：
+
+``` typescript
+// index.d.ts
+declare module '#app' {
+  interface PageMeta {
+    pageType?: string
+  }
+}
+
+// It is always important to ensure you import/export something when augmenting a type
+export {}
 
 ```
 
@@ -1507,450 +1698,813 @@ export default defineNuxtConfig({
 
 
 
+## Intergrate UnoCSS
+
+1. **安装**
+
+   ``` bash
+   npm install -D unocss @unocss/nuxt
+   
+   ```
+
+2. **添加 `nuxt` 配置**
+
+   ``` typescript
+   // nuxt.config.ts
+   export default defineNuxtConfig({
+     modules: [
+       '@unocss/nuxt'
+     ]
+   })
+   
+   ```
+
+3. **添加 `UnoCSS` 配置**
+
+   ``` typescript
+   import { defineConfig } from 'unocss'
+   
+   export default defineConfig({
+     // ...UnoCSS options
+   })
+   
+   ```
+
+
+
+> 如果使用了 Nuxt layer ，启动 `nuxtLayers` 配置，Nuxt 会自动将每个 layer 里的 `uno.config` 合并
+>
+> ``` typescript
+> // nuxt.config.ts
+> export default defineNuxtConfig({
+>   // ...
+>   unocss: {
+>     nuxtLayers: true
+>   }
+> })
+> 
+> ```
+
+
+
 ## i18n
 
-### Setup
+集成了 `vue-i18n` 。
 
-`npm install @nuxtjs/i18n`
+> 得使用 vue-i18n@10 以上版本，否则报错。https://github.com/nuxt/nuxt/issues/29529
 
-``` javascript
-// nuxt.config.js
-[
-  module: [
-		'@nuxtjs/i18n'
-  ],
+
+
+### Installation
+
+``` bash
+npm install @nuxtjs/i18n
+
+```
+
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxtjs/i18n'],
   i18n: {
-    /* module options */
-    baseUrl: ''
-    langDir: 'i18n/'
-    locales: [
-      { code: 'en', iso: 'en-US', file: 'en.js' }
-    ],
-    defaultLocale: 'en',
-    lazy: true,
-    vuex: false
+    // Module Options
+  }
+})
+
+```
+
+> monorepo 的情况下暂时有 bug ，需要安装在根目录下。https://github.com/nuxt-modules/i18n/issues/2270
+
+
+
+### Base Usage
+
+通过配置 `vueI18n` 选项使用 `vue-i18n` 进行翻译。
+
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxtjs/i18n'],
+  i18n: {
+    vueI18n: './i18n.config.ts' // if you are using custom path, default
+  }
+})
+
+```
+
+``` typescript
+// i18n.config.ts
+// 配置和 `vue-i18n` 的 `createI18n` function 一样
+// 本质上 `nuxt` 就是把这个传给 `vue-i18n`
+export default defineI18nConfig(() => ({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      welcome: 'Welcome'
+    },
+    fr: {
+      welcome: 'Bienvenue'
+    }
+  }
+}))
+
+```
+
+然后就可以按以下方式简单使用和切换多语言了：
+
+``` vue
+<script setup>
+const { setLocale } = useI18n()
+</script>
+
+<template>
+  <div>
+    <div>
+      <button @click="setLocale('en')">en</button>
+      <button @click="setLocale('fr')">fr</button>
+      <p>{{ $t('welcome') }}</p>
+    </div>
+  </div>
+</template>
+
+```
+
+> composable functions，例如 `useI18n` 和 `useLocalePath` 等都是自动引入的，你也可以选择通过 `#imports` 明确引入。
+>
+> ``` vue
+> <script setup>
+> import { useI18n, useLocalePath } from '#imports'
+> // ...
+> </script>
+> 
+> ```
+
+
+
+### Link Localizing
+
+使 link url 也本土化，即给 url 带上 locale code 的前缀。
+
+使用了 `Nuxt i18n module` 以后，nuxt 在生成 route map 的时候，原先每个路由都会生成多带 locale code 前缀的路由（默认 locale 不会带前缀）。
+
+``` json
+[
+  {
+    path: "/",
+    name: "index___en",
+  },
+  {
+    path: "/fr",
+    name: "index___fr",
   }
 ]
+
 ```
 
 
 
-### Basic Usage
+#### Configure
 
-#### $t
+首先需要在配置中添加 `locales` 和 `defaultLocale` 。
 
-> 在 template 中使用 $t 。
->
-> ``` vue
-> <nuxt-link :to="localePath('index')">{{ $t('home') }}</nuxt-link>
-> ```
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxtjs/i18n'],
+  i18n: {
+    locales: [ // used in URL path prefix
+      { code: 'en', language: 'en-US' },
+      { code: 'fr', language: 'fr-FR' }
+    ],
+    defaultLocale: 'en' // default locale of your project for Nuxt pages and routings
+  }
+})
 
+```
 
 
-#### nuxt-link
 
-> - `localePath` - 生成当前 locale 对应的路由。
->
->   第一个参数可以是 route 的 name 或者 path 或者 object
->
->   第二个参数可以传特定的 locale code，如果有需要的话。
->
->   `<nuxt-link :to="localePath('index')">{{ $t('home') }}</nuxt-link>`
->
-> - `switchLocalePath` - 生成本页面的另一种 locale 的 route，但是跳转后不会更新 cookie 。
->
->   `<nuxt-link :to="switchLocalePath('en')">English</nuxt-link>`
->
-> 这些函数在 app 上下文中也可以使用：
->
-> ``` javascript
-> export default ({ app }) => {
->   // Get localized path for homepage
->   const localePath = app.localePath('index')
->   // Get path to switch current route to French
->   const switchLocalePath = app.switchLocalePath('fr')
-> }
-> ```
->
-> 
->
-> - `localeRoute` - 返回当前页面的路由对象。
->
->   `const { fullPath } = localeRoute({ name: 'index', params: { foo: '1' } })`
->
-> - localeLocation - 返回当前页面的 `Locale` 对象。
->
->   `<a href="#" @click="$router.push(localeLocation({ name: 'index', params: { foo: '1' } }))">Navigate</a>`
+#### 路由跳转
 
+在进行**路由跳转**时，需要使用恰当的带对应语言前缀的 url ：**`useLocalePath`** 。
 
+``` vue
+<script setup>
+/**
+ * `useLocalePath`: composable, 返回函数 `localePath` 用于生成 url 。
+ *
+ * localePath 可接收两个参数：
+ *  - 第一参数: the route path or name or an object for more complex routes
+ *  - 第二参数: locale code, optional
+ */
+const localePath = useLocalePath()
+</script>
 
-#### $i18n
+<template>
+  <NuxtLink :to="localePath('index')">{{ $t('home') }}</NuxtLink>
+  <NuxtLink :to="localePath('/')">{{ $t('home') }}</NuxtLink>
+  <NuxtLink :to="localePath('index', 'en')">Homepage in English</NuxtLink>
+  <NuxtLink :to="localePath('/user/profile')">Route by path to: {{ $t('profile') }}</NuxtLink>
+  <NuxtLink :to="localePath('user-profile')">Route by name to: {{ $t('profile') }}</NuxtLink>
+  <NuxtLink :to="localePath({ name: 'category-slug', params: { slug: category.slug } })">
+    {{ category.title }}
+  </NuxtLink>
+</template>
 
-> 可以在 `this.$i18n` 中获取 i18n 的相关配置（eg: `this.$i18n.locales`）
->
-> - **setLocale(locale)** - 会更新 cookie 并且跳转至对应路由。
->
->   ``` vue
->   <a
->     href="#"
->     v-for="locale in availableLocales"
->     :key="locale.code"
->     @click.prevent.stop="$i18n.setLocale(locale.code)">{{ locale.name }}</a>
->   ```
->
-> - setLocaleCookie(locale) - 只更新 cookie 。
->
-> - getLocaleCookie() - 获取 cookie 保存的值。
->
-> - **localeProperties** - 当前的 locale 对象
+```
 
+也可以使用 `NuxtLinkLocale` 组件：
 
+``` vue
+<template>
+  <NuxtLinkLocale to="/">{{ $t('home') }}</NuxtLinkLocale>
+</template>
 
-### Options（may use）
+<!-- equivalent to -->
 
-#### baseUrl
+<script setup>
+const localePath = useLocalePath()
+</script>
 
-> default: ' '
->
-> 用于生成带 `hreflang` tag 的备用 URL 的基本前缀。
->
-> 使用生产域名，有利于 SEO。
+<template>
+  <NuxtLink :to="localePath('/')">{{ $t('home') }}</NuxtLink>
+</template>
 
+```
 
 
- #### locales
 
-> type: `array`
->
-> default: `[]`
->
-> App 所支持的多语言列表
->
-> ``` javascript
-> [
-> { code: 'en', iso: 'en-US', file: 'en.json', dir: 'ltr' },
-> { code: 'fr', iso: 'fr-FR', file: 'fr.json' ,
-> ]
-> ```
->
-> - `code`(**required**) - 语言的唯一标识。
->
-> - `iso`(使用 `SEO` 特性时 **required**) - 设置语言的 ISO 代码。
->
-> - `file` - 文件名，会在 `langDir` 的文件路径后找对应文件。
->
-> - `dir` - 指定元素和内容的方向（文字？可能有些地区语言阅读方向不同），`'rtl'` `'ltl'` `'auto' `。
->
-> - `domain`(使用 `differentDomains` 时 **required**) - 使用此语言时想要使用的 domain 。
->
-> - `...`  - 任何其它的属性都可以在 `runtime` 中暴露，例如我们可以设定 `name` 之类的属性在语言选择器中使用。
+生成对应语言的完整 route object ：**`useLocaleRoute`** 。
 
+类似于 `useLocalePath` ，但是返回的是由 `vue-router` resolved 的完整 route object ，而不是 full path 。优势在于可以携带更多的信息。
 
+``` vue
+<script setup>
+const localeRoute = useLocaleRoute()
+function onClick() {
+  const route = localeRoute({ name: 'user-profile', query: { foo: '1' } })
+  if (route) {
+    return navigateTo(route.fullPath)
+  }
+}
+</script>
 
-#### langDir
+<template>
+  <button @click="onClick">Show profile</button>
+</template>
 
-> default: `null`
->
-> 包含翻译文件的文件夹路径（eg: `'i18n/'`）。
+```
 
 
 
-#### defaultDirection
+#### 切换语言
 
-> default: `ltr`
->
-> locales options 对象中没有配置 `dir` 属性时默认使用这个属性。
+在当前页面**切换语言**：**`useSwitchLocalePath`** 。
 
+``` vue
+<script setup>
+/**
+ * `useSwitchLocalePath`: composable, 返回函数 `switchLocalePath` 用于切换语言。
+ *
+ * switchLocalePath 传入对应的参数 locale code 切换语言。
+ */
+const switchLocalePath = useSwitchLocalePath()
+</script>
 
+<template>
+  <NuxtLink :to="switchLocalePath('en')">English</NuxtLink>
+  <NuxtLink :to="switchLocalePath('fr')">Français</NuxtLink>
+</template>
 
-#### defaultLocale
+```
 
-> default: `null`
->
-> App 的默认语言，需要与 `locales` 配置列表的其中一种语言 `code` 相匹配。
->
-> 使用 `prefix_except_default` **strategy** 时，此处定义的语言将不会添加路由前缀。
->
-> 但是不管使用什么策略，都推荐配置该属性，因为如果路由中的语言前缀匹配不到相应语言时，会回退到该语言。
 
 
+#### 部分忽略 localized
 
-#### strategy
+可以选择在对应页面上配置，也可以选择在 `nuxt.config.ts` 上全局配置。
 
-> default: `'prefix_except_default'`
->
-> 路由生成策略，确定已经设置了 `defaultLocale`。如果 Nuxt 版本低于 2.10.2 ，需要确保 `defaultLocale` 在 locales array 中最后一个。
->
-> - `'no_prefix'` - 路由不带 locale 前缀，设置后需要靠 browser 和 cookie 分辨 locale ，并且只能通过 i18n Api 切换 locale 。
-> - `'prefix_except_default'` - 除了 `defaultLocale` ，其他 locale 路由都带前缀。
-> - `'prefix'` - 所有 locale 路由都带前缀。
-> - `'prefix_and_default'` - 所有 locale 路由都带前缀，但是 `defaultLocale` 不带前缀的路由也保留。
 
 
+**单独忽略某个语言**
 
-#### lazy
+``` vue
+<script setup>
+// ～/pages/about.vue
+defineI18nRoute({
+  locales: ['fr', 'es']
+})
+</script>
 
-> type: object | boolean
->
-> default: `false`
->
-> locale file 是否延迟加载。
->
-> 当值为 `true` 时，可以选择使用 object 配置一些属性：
->
-> - `skipNuxtState`(defalut: `true`) - default locale 的 message 会在 serve-side 时就打包进了 Nuxt ‘state’ 中，并在 client-size 进行使用，意味着可以减少对 default locale message 文件的网络请求。
->
-> 必须配置 langDir 。
+```
 
+``` typescript
+// nuxt.config.ts
+i18n: {
+  pages: {
+    about: {
+      en: false,
+    }
+  }
+}
+```
 
 
-#### detectBrowserLanguage
 
-> default:
->
-> ``` javascript
-> {
-> alwaysRedirect: false,
-> fallbackLocale: '',
-> redirectOn: 'root',
-> useCookie: true,
-> cookieAge: 365,
-> cookieCrossOrigin: false,
-> cookieDomain: null,
-> cookieKey: 'i18n_redirected',
-> cookieSecure: false,
-> }
-> ```
->
-> 允许使用浏览器语言检测，可以在用户首次访问网站时自动跳转到他们浏览器的首要语言。
->
-> 通过 `navigator` 或者 `accept-language` HTTP header 匹配 locales array 中 object 的 `iso` 或者 `code` 属性。会先按完全匹配，如果没有匹配上，再按 `-` 之前的字符进行匹配。
->
-> **对 SEO 最有利的是设置 `redirectOn: 'root'`**  。
->
-> - `alwaysRedirect`(default: `false`) - 每次都进行重定向，并保留 cookie。
-> - `fallbackLocale`(default: `null`) - 如果没有可以匹配用户浏览器首要语言的，回退到该语言。
-> - `redirectOn`(default: `root`) 
->   - `all` - 所有路由都检测浏览器语言。
->   - `root` - 只在网站根路径 `/` 下才检测。只有 `stategy` 设置 `no_prefix`  以外的值才有效。
->   - `no prefix` - 比 `root` 更宽松一点，不止根路径，只要不到 locale 前缀的路由都检测（例：`/foo`）。
-> - `useCookie`(default: `true`) - 使用 cookie 保存用户第一次访问时重定向的 locale 值，防止后续每次访问都重定向；可以设置 false ，每次都进行重定向。
-> - `cookieAge` (default: `365`) - 设置 cookie 的有效天数。
-> - `cookieKey` (default: `'i18n_redirected'`) - 设置 cookie 的属性名。
-> - `cookieDomain` (default: `null`)  - 重写 cookie 的默认域名（网站 host 的地址）。
-> - `cookieCrossOrigin` (default: `false`) - 设置为 true 时，设置 flags `SameSite=None; Secure` 允许不同域名下使用改 cookie ，如果 app 被使用 iframe 集成时需要开启。
-> - `cookieSecure` (default: `false`) - 设置 cookie 的 `Secure` flag。
-
-
-
-#### rootRedirect
-
-> default: `null`
->
-> 设置用户访问根路径时（`/`）需要跳转的路由。可以接受一个 string 或者带有 `statusCode` 和 `path` 的 object 。
->
-> ``` javascript
-> {
-> statusCode: 301,
-> path: 'about-us'
-> }
-> ```
+**当前页面不启用 localized**
 
+``` vue
+<script setup>
+// ～/pages/about.vue
+defineI18nRoute(false)
+</script>
 
+```
 
-#### vuex
+``` typescript
+// nuxt.config.ts
+i18n: {
+  customRoutes: 'config',
+  pages: {
+    about: false
+  }
+}
+```
 
-> type: `object` or `false`
->
-> default: `{ moduleName: 'i18n', syncRouteParams: true }`
->
-> 注册一个 i8n vuex module。
->
-> - `moduleName`(default: `i18n`) - module namespace 。
-> - syncRouteParams(default: `true`) - 启用 `setRouteParams` mutation , 为了在动态路由（dynamic routes）中自定义路由名称（custom route names）。
+
+
+### Default Language
+
+用户第一次访问页面时，`Nuxt` 会把用户浏览器的 preferred language 和我们预设的 locales 进行匹配，返回第一个匹配上的 locale 。
 
+`Nuxt` 每次都会把 locale 保存在 cookie 中，确保用户下一次访问时的 locale 与上一次一致。
 
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  i18n: {
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected', // cookie 的 key
+      redirectOn: 'root' // recommended
+    }
+  }
+})
 
-#### vueI18n
+```
 
-> default: `{}`
+> `redirectOn: 'root'` 是默认推荐配置，最好不要改动。这个配置对 SEO 和爬虫最友好，用户只有在进入 index 页面的时候才会进行语言检测。可以检测到所有 locale 的页面。
 >
-> 添加 `vue-i18n` 配置。
+> 意味着用户输入其它 locale 前缀的 url 也可以正常访问其它 locale 的页面。
 
 
 
-#### vueI18nLoader
+不使用 cookie ，即每次进入页面都重新检测匹配 locale ，设置 `useCookie: false` ：
 
-> default: `false`
->
-> 如果为 true ， 将会添加 vue-i18n-loader 到 Nuxt 的 Webpack config 中去，可以单独定义每个页面的 i18n 块。
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  i18n: {
+    detectBrowserLanguage: {
+      useCookie: false
+    }
+  }
+})
 
+```
 
 
-#### onBeforeLanguageSwitch
 
-> default: `(oldLocale, newLocale, isInitialSetup, context)=> {}`
->
-> locale 切换前的回调函数，可以改变准备要设置的语言 newLocale。
+不检测和匹配 locale ，设置 `detectBrowserLanguage: false` ：
 
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  i18n: {
+    // ...
+    detectBrowserLanguage: false
+  }
+})
 
+```
 
-#### onLanguageSwitched
 
-> default: `(oldLocale, newLocale) => {}`
->
-> locale 切换后的回调函数。
 
+总是重定向到用户上次选中的语言，设置 `alwaysRedirect: true` ：
 
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  i18n: {
+    // ...
+    detectBrowserLanguage: {
+      useCookie: true,
+      alwaysRedirect: true
+    }
+  }
+})
 
-#### skipSettingLocaleOnNavigate
+```
 
-> default: `false`
->
-> 当切换去新语言（切换语言会跳转路由）时，页面如果有添加动画，那么在页面动画执行期间不会切换语言。
->
-> 如果为 true ，搭配 beforeEnter ，可以使得页面动画在语言切换后再进行。
->
-> ``` javascript
-> export default {
-> plugins: ['~/plugins/router'],
-> 
-> i18n: {
->  // ... your other options
->  skipSettingLocaleOnNavigate: true,
-> }
-> }
-> ```
->
-> ``` javascript
-> export default ({ app }) => {
-> app.nuxt.defaultTransition.beforeEnter = () => {
->  app.i18n.finalizePendingLocaleChange()
-> }
-> 
-> // Optional: wait for locale before scrolling for a smoother transition
-> app.router.options.scrollBehavior = async (to, from, savedPosition) => {
->  // Make sure the route has changed
->  if (to.name !== from.name) {
->    await app.i18n.waitForPendingLocaleChange()
->  }
->  return savedPosition || { x: 0, y: 0 }
-> }
-> }
-> ```
->
-> 单一 page
->
-> ``` javascript
-> export default {
-> transition: {
->  beforeEnter() {
->    this.$i18n.finalizePendingLocaleChange()
->  }
-> }
-> }
-> ```
->
-> 
 
 
+在跨域的情况下使用 cookie （e.g. 在一个 iframe 中），设置 `cookieCrossOrigin: true` ，会把 cookie settings `'SameSite=Lax'` 改成 `'SameSite=None; Secure'` ：
 
-### Guide
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  i18n: {
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieCrossOrigin: true
+    }
+  }
+})
 
-#### ignoring localized routes
+```
 
-> 让一些页面只能够适配部分 locale 。
->
-> ``` javascript
-> export default {
-> nuxtI18n: {
->  locales: ['fr', 'es']
-> }
-> }
-> ```
->
-> ``` javascript
-> // 禁止切换语言
-> export default {
-> nuxtI18n: false
-> }
-> ```
 
 
+### SEO
 
-#### SEO
+使用 **`useLocaleHead()`** composable ，会返回一个 function 可以设置相关 locale 的 SEO metadata。
 
-> 提供了 `$nuxtI18nHead` 函数生成 SEO metadata ，用来针对搜索引擎优化 app 的语言相关方面。
->
-> - `<html>` 标签的 `lang` 属性。
-> - 生成 `hreflang` 备用 link 。
-> - 生成 OpenGraph locale tag 。
-> - 生成规范链接（canonical link）。
->
-> 
->
-> 要求：
->
-> - 设置 locales array 中 object 的 iso 属性为 locale 对应的 ISO 代码。
->
-> - 设置 `baseURL` 为生产环境域名，才可以生成合格的备用 link 。
->
->   ``` javascript
->   i18n: {
->     baseUrl: 'https://my-nuxt-app.com'
->   }
->   ```
->
-> 
->
-> 使用：
->
-> 在 `head()` 中调用 `$nuxtI18nHead` 函数，可以在 nuxt.config.js 或者 page 中单独配置。
->
-> ``` javascript
-> export default {
->   // ...other Nuxt options...
->   head () {
->     return this.$nuxtI18nHead({ addSeoAttributes: true })
->   }
-> }
-> ```
->
-> 合并其它 head
->
-> ``` javascript
-> export default {
->   // ...other Nuxt options...
->   head () {
->     const i18nHead = this.$nuxtI18nHead({ addSeoAttributes: true })
->     return {
->       htmlAttrs: {
->         myAttribute: 'My Value',
->         ...i18nHead.htmlAttrs
->       },
->       meta: [
->         {
->           hid: 'description',
->           name: 'description',
->           content: 'My Custom Description'
->         },
->         ...i18nHead.meta
->       ],
->       link: [
->         {
->           hid: 'apple-touch-icon',
->           rel: 'apple-touch-icon',
->           sizes: '180x180',
->           href: '/apple-touch-icon.png'
->         },
->         ...i18nHead.link
->      ]
->     }
->   }
-> }
-> ```
->
-> 注意：
->
-> 在 nuxt generation 时由于有可能不在 vue component 的环境下执行该函数导致崩溃，所以最好在执行前进行判空。
+- `<html>` 的 `lang` 属性；
+- 生成 `hreflang` 备用链接；
+- OpenGraph locale tag generation；
+- canonical link generation。
+
+> 只能在 3 个地方使用：app.vue ，~/pages ，~/layouts 
+
+
+
+#### Requirements
+
+1. 把 locales 选项设置成包含 `code` 和 `language` 的 object ：
+
+   ``` typescript
+   // nuxt.config.ts
+   export default defineNuxtConfig({
+     i18n: {
+       locales: [
+         {
+           code: 'es',
+           language: 'es-ES'
+         },
+         {
+           code: 'en',
+           language: 'en-US',
+           isCatchallLocale: true // This one will be used as catchall locale
+         }
+       ]
+     }
+   })
+   
+   ```
+
+2. 必须设置生产的域名作为 `baseUrl` 选项的值，用于生成备用链接：
+
+   ``` typescript
+   // nuxt.config.ts
+   export default defineNuxtConfig({
+     i18n: {
+       baseUrl: 'https://my-nuxt-app.com' // 也可以是 function
+     }
+   })
+   
+   ```
+
+
+
+#### Usage
+
+**推荐用法**：在 `layouts/default.vue` 中使用 Nuxt 的 `SEO Meta Components` 设置全局的 metadata ，然后单文件中有需要再使用 `definePageMeta()` 进行重写。
+
+``` vue
+<script setup>
+// layouts/default.vue
+const route = useRoute()
+const { t } = useI18n()
+const head = useLocaleHead()
+const title = computed(() => t(route.meta.title ?? 'TBD', t('layouts.title'))
+);
+</script>
+
+<template>
+  <div>
+    <Html :lang="head.htmlAttrs.lang" :dir="head.htmlAttrs.dir">
+      <Head>
+        <Title>{{ title }}</Title>
+        <template v-for="link in head.link" :key="link.id">
+          <Link :id="link.id" :rel="link.rel" :href="link.href" :hreflang="link.hreflang" />
+        </template>
+        <template v-for="meta in head.meta" :key="meta.id">
+          <Meta :id="meta.id" :property="meta.property" :content="meta.content" />
+        </template>
+      </Head>
+      <Body>
+        <slot />
+      </Body>
+    </Html>
+  </div>
+</template>
+
+```
+
+``` vue
+<template>
+	<!-- app.vue -->
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+</template>
+
+```
+
+``` vue
+<script setup>
+// pages/index.vue
+definePageMeta({
+  title: 'pages.title.top' // set resource key
+})
+
+const { locale, locales, t } = useI18n()
+const switchLocalePath = useSwitchLocalePath()
+
+const availableLocales = computed(() => {
+  return locales.value.filter(i => i.code !== locale.value)
+})
+</script>
+
+<template>
+  <div>
+    <p>{{ t('pages.top.description') }}</p>
+    <p>{{ t('pages.top.languages') }}</p>
+    <nav>
+      <template v-for="(locale, index) in availableLocales" :key="locale.code">
+        <span v-if="index"> | </span>
+        <NuxtLink :to="switchLocalePath(locale.code)">
+          {{ locale.name ?? locale.code }}
+        </NuxtLink>
+      </template>
+    </nav>
+  </div>
+</template>
+
+```
+
+
+
+### Lazy-load
+
+在选中对应 locale 时再 load 对应的 messages 。
+
+- 设置 `lazy: true` 。
+- 给 `locales` 配置中各个 locale 的 object 添加 `file` / `files` key，该 file 默认在 `i18n/locales/` 下，定义了对应 locale 的 messages 。
+- 删除在 `vueI18n` 配置中传入的 messages 。
+
+``` bash
+-| nuxt-project/
+---| i18n/
+-----| locales/
+-------| en-US.json
+-------| es-ES.js
+-------| fr-FR.js
+---| nuxt.config.ts
+
+```
+
+``` typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  i18n: {
+    locales: [
+      {
+        code: 'en',
+        file: 'en-US.ts'
+      },
+      {
+        code: 'es-UY',
+        // lazy loading order: `es.json` -> `es-UY.json`, and then merge 'es-UY.json' with 'es.json'
+        files: ['es.ts', 'es-UY.json']
+      },
+      {
+        code: 'es-AR',
+        // es.ts 不会被缓存
+        // strings and object configurations can be mixed
+        files: [{ path: 'es.ts', cache: false }, 'es-UY.json']
+      }
+    ],
+    lazy: true,
+    defaultLocale: 'en'
+  }
+})
+
+```
+
+``` typescript
+// i18n/locales/en-US.ts
+export default defineI18nLocale(async locale => {
+  // 如果需要引入外部翻译，就需要使用这种方式
+  // const { locale } = await import('your path')
+ 
+  return {
+    welcome: 'Welcome'
+  }
+})
+
+// or
+
+export default {
+  welcome: 'Welcome'
+}
+
+```
+
+> 如果使用 function 返回 messages ，必须包裹在 `defineI18nLocale` composable 中。
+
+
+
+可以使用 `loadLocaleMessages` 手动 load messages（可以在当前 locale 环境下使用其它 locale 的翻译）：
+
+``` typescript
+const { loadLocaleMessages, t } = useI18n()
+
+await loadLocaleMessages('nl')
 
+const welcome = computed(() => t('welcome')) // Welcome!
+// 使用其它 locale 的翻译
+const welcomeDutch = computed(() => t('welcome', 1, { locale: 'nl' })) // Welkom!
+
+```
+
+
+
+### Lang Switcher
+
+当 Nuxt 加载完 i18n module 后，会把 locales 的配置都添加到 `nuxtApp.$i18n` 上，所以只要在 configure 配置 locales 的时候在 object 中添加 name 属性，就可以很方便的实现一个 Lang Switcher。
+
+``` typescript
+// nuxt.config.tx
+export default defineNuxtConfig({
+  i18n: {
+    locales: [
+      {
+        code: 'en',
+        name: 'English'
+      },
+      {
+        code: 'es',
+        name: 'Español'
+      }
+    ]
+  }
+})
+
+```
+
+``` vue
+<script setup>
+const { locale, locales, setLocale } = useI18n()
+
+const availableLocales = computed(() => {
+  return locales.value.filter(i => i.code !== locale.value)
+})
+</script>
+
+<template>
+	...
+	<!-- 常规版 -->
+	<NuxtLink v-for="locale in availableLocales" :key="locale.code" :to="switchLocalePath(locale.code)">
+    {{ locale.name }}
+  </NuxtLink>
+
+  ...
+
+	<!-- 如果开启了 `detectBrowserLanguage` ，由于是使用 cookie 保存上次选中的 locale ，所以需要使用 `setLocale` 来，将选中 locale 保存至 cookie 。-->
+	<!-- 不这样做会导致不管怎么切换 locale ，都只会展示 cookie 之前保存的 locale 。-->
+  <a href="#" v-for="locale in availableLocales" :key="locale.code" @click.prevent.stop="setLocale(locale.code)">
+    {{ locale.name }}
+  </a>
+  ...
+</template>
+
+```
+
+
+
+### 切换语言时阻止页面动画
+
+在页面进行 locale 切换的时候，其实也是在进行路由导航，会执行 transition 动画。
+
+- **Global transition**
+
+  全局的动画可以通过设置 `skipSettingLocaleOnNavigate: true` ，然后在 transition 的 `onBeforeEnter` hook 中先加载 locale 来实现阻止动画。
+
+  `skipSettingLocaleOnNavigate` ：
+
+  ``` typescript
+  // nuxt.config.ts
+  export default defineNuxtConfig({
+    i18n: {
+      // ... your other options
+      skipSettingLocaleOnNavigate: true
+    }
+  }
+  
+  ```
+
+   `onBeforeEnter` hook ：
+
+  ``` vue
+  <script setup lang="ts">
+  // app.vue
+  const { finalizePendingLocaleChange } = useI18n()
+  
+  const onBeforeEnter = async () => {
+    await finalizePendingLocaleChange()
+  }
+  </script>
+  
+  <template>
+    <NuxtLayout>
+      <NuxtPage
+        :transition="{
+          name: 'my',
+          mode: 'out-in',
+          onBeforeEnter
+        }"
+      />
+    </NuxtLayout>
+  </template>
+  
+  <style>
+  .my-enter-active,
+  .my-leave-active {
+    transition: opacity 0.3s;
+  }
+  .my-enter,
+  .my-leave-active {
+    opacity: 0;
+  }
+  </style>
+  
+  ```
+
+  Route 预设的页面 scroll 事件执行前先等待语言加载：
+
+  ``` typescript
+  // router.options.ts
+  import type { RouterConfig } from '@nuxt/schema'
+  
+  export default <RouterConfig>{
+    async scrollBehavior(to, from, savedPosition) {
+      const nuxtApp = useNuxtApp()
+  
+      // make sure the route has changed.
+      if (nuxtApp.$i18n && to.name !== from.name) {
+        // `$i18n` is injected in the `setup` of the nuxtjs/i18n module.
+        // `scrollBehavior` is guarded against being called even when it is not completed
+        await nuxtApp.$i18n.waitForPendingLocaleChange()
+      }
+  
+      return savedPosition || { top: 0 }
+    }
+  }
+  
+  ```
+
+- **Per page**
+
+  如果是针对单独页面设置的动画，可以按以下方式：
+
+  ``` vue
+  <script setup lang="ts">
+  const route = useRoute()
+  const { finalizePendingLocaleChange } = useI18n()
+  
+  definePageMeta({
+    pageTransition: {
+      name: 'page',
+      mode: 'out-in'
+    }
+  })
+  
+  route.meta.pageTransition.onBeforeEnter = async () => {
+    await finalizePendingLocaleChange()
+  }
+  </script>
+  
+  <style scoped>
+  .page-enter-active,
+  .page-leave-active {
+    transition: opacity 1s;
+  }
+  .page-enter,
+  .page-leave-active {
+    opacity: 0;
+  }
+  </style>
+  
+  ```

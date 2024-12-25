@@ -266,9 +266,27 @@ const router = createRouter({
     // - /Users/posva because of sensitive: true
     { path: '/users/:id', sensitive: true },
     // will match /users, /Users, and /users/42 but not /users/ or /users/42/
-    { path: '/users/:id?' },
+    { path: '/users/:id?' }
   ],
-  strict: true, // applies to all routes
+  strict: true // applies to all routes
+})
+```
+
+
+
+**捕获 404 not found route**
+
+``` typescript
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      // will match everything and put it under `route.params.pathMatch`
+      path: '/:pathMatch(.*)',
+      name: 'NotFound',
+      component: NotFound
+    }
+  ]
 })
 ```
 

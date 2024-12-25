@@ -301,6 +301,12 @@ git push origin <branch_name>
 git push -u origin <branch_name>
 ```
 
+本地分支强推覆盖远程分支：
+
+``` bash
+git push origin <local_branch>:<remote-branch> --force
+```
+
 
 
 ### git log
@@ -526,9 +532,13 @@ git reset --hard <hash>
 
 给某次提交打上标签。
 
-> 标签规范：
+> 语义化版本号规范（Semantic Versioning）：
 >
 > `v1.0.0` ：表示主版本号为 1、次版本号为 0 、修订版本号为 0 。
+>
+> - 主版本号：当你做了不兼容的 API 修改时，应该升级主版本号；
+> - 次版本号：当你做了向下兼容的功能性新增时，应该升级次版本号；
+> - 修订号：当你做了向下兼容的问题修正时，应该升级修订号。
 
 - **列出标签**
 

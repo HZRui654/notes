@@ -139,9 +139,9 @@ const i18n = createI18n({
 
 ## 复数化（ Pluralization ）
 
-基本用不上。 
-
 > `|` ，可以自定义 format 方式。
+>
+>  使用 `useI18n` 时直接使用 `t` 即可。
 
 ``` typescript
 const messages = {
@@ -154,22 +154,22 @@ const messages = {
 
 ``` vue
 <template>
-  <p>{{ t('car', 1) }}</p>
+  <p>{{ $tc('car', 1) }}</p>
   <p>car</p>
 
-  <p>{{ t('car', 2) }}</p>
+  <p>{{ $tc('car', 2) }}</p>
   <p>cars</p>
 
-  <p>{{ t('apple', 0) }}</p>
+  <p>{{ $tc('apple', 0) }}</p>
   <p>no apples</p>
 
-  <p>{{ t('apple', 1) }}</p>
+  <p>{{ $tc('apple', 1) }}</p>
   <p>one apple</p>
 
-  <p>{{ t('apple', 10, { count: 10 }) }}</p>
+  <p>{{ $tc('apple', 10, { count: 10 }) }}</p>
   <p>10 apples</p>
 
-  <p>{{ t('apple', 10) }}</p>
+  <p>{{ $tc('apple', 10) }}</p>
   <p>10 apples</p>
 </template>
 ```
@@ -353,8 +353,9 @@ const i18n = createI18n({
   	<!--
   		tag: 生成的根标签，没有设置的话，默认 fragment
   		keypath: 使用的翻译的 key
+  		scope="global": 如果不加这个，会有 Not found parent scope. use the global scope 的警告
   	-->
-    <i18n-t keypath="term" tag="label" for="tos">
+    <i18n-t keypath="term" tag="label" for="tos" scope="global">
       <a href="/term" target="_blank">{{ $t('tos') }}</a>
     </i18n-t>
   

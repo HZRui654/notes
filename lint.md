@@ -1,12 +1,32 @@
-# Lint
+**实际上任何前端项目都可以按照这样的方法实现代码风格的规范化**，`monorepo` 也可用。
+
+
 
 ## ESLint
 
-### 配置
+1. `ESLint` 如何理解代码？
 
-- 选择生成的配置文件格式最好是 `js` ，因为 `eslint` 查询配置文件有优先级 `js` > `yaml` > `json` 。
+   `parser` 和 `parserOptions` 选项与 `ESLint` 如何理解我们的代码相关。分析器负责解析对应语言，将代码转化为 AST 语法树，便于进行分析。而 `parserOptions` 可以对解析器的能力进行详细设置。
 
-- 选择配置文件 module type 的时候根据自己项目的打包工具进行选择，`webpack` 一般是 `CommonJS` , `vite` 一般是 `Javascript modules(import / export)`
+2. `ESLint` 如何判断代码是否符合规范？
+
+   `ESLint` 提供了 [自定义规则](https://eslint.org/docs/latest/extend/custom-rule-tutorial) 的接口，开发者需要遵照接口，根据分析器的 AST 产物，实现规范检查逻辑，再将实现的多条规范聚合为 `plugin` 插件的形式。`plugin` 字段指定了 `ESLint` 应用什么规则集，具有理解哪些规范的能力。
+
+3. 规则的启用与禁用：
+
+   有了规则集，能够理解规范，不代表 `ESLint` 就要对不规范的内容做出响应，还需要进一步在 `rules` 字段中对这些规则进行开启或者关闭的声明，只有开启的规则才会生效。
+
+4. 继承已有配置：
+
+   面对琳琅满目的规则集，我们完全在项目中配置是不可取的。因此社区逐渐演进出了许多配置预设，让我们可以一键继承，从而减少绝大多数手动配置的工作量。
+
+5. 配置重写：
+
+   如果我们希望某些文件应用一些独特的配置，可以使用 `overrides` 字段实现。`overrides` 的每个成员对象都需要指定目标文件，除了应用所有父级配置之外，还要应用成员对象中声明的独有配置。`ESLint` 支持文件级别的重写。
+
+
+
+相关配置：
 
 - **`env`** 节点：告诉 `eslint` 代码是运行在哪些环境中（因为一般不允许使用**未在页面内声明的成员**）
 
@@ -47,77 +67,111 @@
 
 
 
-### 安装
+### 规则集选型
 
-``` bash 
-npm install eslint -D
+`ESLint` 已经有了很成熟的规则集，常用：
+
+1. **Airbnb 规则集：`eslint-config-airbnb`**
+
+   最严格，强制使用分号，单引号，尾随逗号，适合需要高代码质量和一致性的项目。
+
+2. **Google 规则集：`eslint-config-google`**
+
+   较严格，强制使用分号，双引号，不推荐尾随逗号，适合需要清晰可读代码的项目。
+
+3. **Standard 规则集：`eslint-config-standard`**
+
+   最宽松，不使用分号，单引号，不推荐尾随逗号，适合需要简洁快速开发的项目。
+
+这里选择使用 **Standard 规则集**。
+
+
+
+### 依赖安装
+
+首先安装核心工具 `ESLint` ：
+
+```bash
+pnpm i -wD eslint
+
 ```
 
+编写配置文件时提供类型支持：
+
+``` bash
+pnpm i -wD eslint-define-config
+
+```
+
+Standard 规则集：
+
+``` bash
+pnpm i -wD eslint-config-standard
+
+```
+
+解析 `Typescript` 的能力：
+
+```bash
+pnpm i -wD @typescript-eslint/eslint-plugin @typescript-eslint/parser
+
+```
+
+解析 `Vue` 的能力：
+
+``` bash
+pnpm i -wD eslint-plugin-vue vue-eslint-parser
+
+```
+
+解析 `Unocss` 的能力：
+
+``` bash
+pnpm i -wD @unocss/eslint-config
+
+```
+
+需要在根目录提供 `uno.config.ts` 文件，否则会报错。
 
 
-### 初始化
 
-`.eslintrc.js`
+### 配置
+
+根目录新建 `.eslintrc.js` 文件，作为 `ESLint` 的配置文件：
+
+> - 选择生成的配置文件格式最好是 `js` ，因为 `eslint` 查询配置文件有优先级 `js` > `yaml` > `json` 。
+>
+> - 选择配置文件 module type 的时候根据自己项目的打包工具进行选择，`webpack` 一般是 `CommonJS` , `vite` 一般是 `Javascript modules(import / export)`
 
 ``` js
-module.exports = {
-  root: true,
+// .eslintrc.js
+const { defineConfig } = require('eslint-define-config') // eslint-disable-line
+
+module.exports = defineConfig({
+  // 将浏览器 API、ES API 和 Node API 看做全局变量，不会被特定的规则(如 no-undef)限制。
   env: {
     browser: true,
-    es6: true,
-    // 不添加 node ，eslint 会报错
-    // 'module' is not defined
+    es2022: true,
     node: true
   },
-  extends: [
-    'eslint:recommended',
-  ],
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module'
+  // 设置自定义全局变量，不会被特定的规则(如 no-undef)限制。
+  globals: {
+    // 假如我们希望 jquery 的全局变量不被限制，就按照如下方式声明。
+    // $: 'readonly',
   },
-  rules: {}
-}
-
-```
-
-
-
-### Vue 拓展
-
-eslint 是不会解析 `.vue` 后缀文件，所以需要添加 extends 拓展。
-
-``` bash
-npm install eslint-plugin-vue vue-eslint-parser -D
-```
-
-``` js
-{
-  extends: {
-    'eslint:recommended',
-    'plugin:vue/vue3-recommended'
-  }
-}
-```
-
-
-
-### Ts 拓展
-
-eslint 是不会解析 `.ts` 后缀文件，所以需要添加 extends 拓展。
-
-``` bash
-npm install @typescript-eslint/eslint-plugin @typescript-eslint/parser -D
-```
-
-``` js
-{
-  extends: {
-    'eslint:recommended',
+  extends: [
+    'standard',
+    '@unocss',
     'plugin:vue/vue3-recommended',
     'plugin:@typescript-eslint/recommended'
-  },
+  ],
+  // 虽然 extends 插件提供额外的规则和功能，为了确保 ESLint 能够识别和使用这些规则，在 plugins 中显式声明插件。
+  plugins: [
+    '@typescript-eslint',
+    'vue'
+  ],
   /**
+   * 指定 vue 解析器
    * 使用 'plugin:vue/vue3-recommended' extend 时就已经引入了 parser 'vue-eslint-parser',
    * 但是使用 'plugin:@typescript-eslint/recommended' extend 会再引入 parser '@typescript-eslint/parser' 覆盖掉 vue 的 parser，
    * 根据 eslint-plugin-vue 的官网可知需要将其他的 parser 放入 parserOptions 中。
@@ -126,165 +180,484 @@ npm install @typescript-eslint/eslint-plugin @typescript-eslint/parser -D
    */
   parser: 'vue-eslint-parser',
   parserOptions: {
-    ecmaVersion: 'latest',
+    // 配置 TypeScript 解析器
     parser: '@typescript-eslint/parser',
-    sourceType: 'module'
-  }
-}
-```
-
-
-
-### UnoCSS
-
-``` bash
-npm install @unocss/eslint-config -D
-```
-
-``` js
-{
-  extends: {
-    '@unocss'
-  }
-}
-```
-
-
-
-
-
-### 兼容 Prettier
-
-ESLint 与 Prettier 会在一些规则上有冲突，导致无法正常格式化，需要进行兼容。
-
-``` bash
-npm install eslint-plugin-prettier eslint-config-prettier -D 
-```
-
-``` js	
-{
-  extends: [
-    // Prettier 必须放在最后
-    'plugin:prettier/recommended'
-  ]
-}
-
-// 引入后相当于下面的作用，引入 prettier 并屏蔽掉冲突的规则
-{
- 	extends: ['prettier'],
-  plugins: ['prettier'],
+    // 支持的 ecmaVersion 版本
+    ecmaVersion: 'latest',
+    // 我们主要使用 esm，设置为 module
+    sourceType: 'module',
+    // TypeScript 解析器需要一个 tsconfig 文件来确认解析范围
+    project: ['./tsconfig.eslint.json'],
+    // 告诉 ESLint 解析器哪些文件扩展名是额外的文件类型, TypeScript 解析器需要这个配置
+    extraFileExtensions: ['.vue']
+  },
   rules: {
-    'prettier/prettier': 'error',
-    'arrow-body-style': 'off',
-    'prefer-arrow-callback': 'off',
-  }
-}
-```
-
-
-
-### 总结
-
-- 安装
-
-  ``` shell
-  npm install eslint -D
-  npm install eslint-plugin-vue vue-eslint-parser -D
-  npm install @typescript-eslint/eslint-plugin @typescript-eslint/parser -D
-  npm install @unocss/eslint-config -D
-  npm install eslint-plugin-prettier eslint-config-prettier -D 
-  ```
-
-- `.eslintrc.js`
-
-  ``` js
-  module.exports = {
-    root: true,
-    env: {
-      browser: true,
-      es6: true,
-      node: true
-    },
-    extends: [
-      'eslint:recommended',
-      '@unocss',
-      'plugin:vue/vue3-recommended',
-      'plugin:@typescript-eslint/recommended',
-      'plugin:prettier/recommended'
-    ],
-    parser: 'vue-eslint-parser',
-    parserOptions: {
-      ecmaVersion: 'latest',
-      parser: '@typescript-eslint/parser',
-      sourceType: 'module'
-    },
-    rules: {
-      // 没有内容的 HTML 标签要求自闭
-      'vue/html-self-closing': ['error', {
+    // Typescript 已有类型检查，所以将这个关掉。
+    'no-undef': 'off',
+    // function 的括号前不要用空格
+    'space-before-function-paren': ['error', 'never'],
+    // 没有内容的 HTML 标签要求自闭。
+    'vue/html-self-closing': ['error', {
         html: {
           normal: 'never',
           void: 'always'
         }
-      }],
-      // vue 文件名要求至少两个单词小驼峰格式
-      'vue/multi-word-component-names': ['error', {
-        // 下面文件名不会被校验
-        ignores: [
-          'index'
-        ]
-      }],
-      // 可以使用 any type
-      '@typescript-eslint/no-explicit-any': 'off',
-      // 可以使用 @ts-ignore 等注释
-      '@typescript-eslint/ban-ts-comment': 'off'
-    }
+      }
+    ],
+    // vue 文件名要求至少两个单词小驼峰格式。
+    'vue/multi-word-component-names': ['error', {
+        ignores: ['index']
+      }
+    ],
+    'vue/max-attributes-per-line': ['error', {
+        singleline: 3, // 在单行元素中每行最多 3 个属性
+        multiline: {
+          max: 1 // 在多行元素中每行最多 1 个属性，默认为 1 
+        }
+        // multiline: 1 也可以使用这种格式
+      }
+    ],
+    // 可以使用 any type。
+    // '@typescript-eslint/no-explicit-any': 'off',
+    // 可以使用 @ts-ignore 等注释。
+    '@typescript-eslint/ban-ts-comment': 'off',
+    // 当使用的类在 unocss 黑名单中时进行警告
+    // "@unocss/<rule-name>": "warn", // or "error"
   }
-  ```
-  
-- `.eslintignore`
+})
 
-  ``` 
-  # 忽略检查的文件和文件夹
-  
-  node_modules
-  dist
-  .github
-  *-lock.yaml
-  *-lock.json
-  .husky
-  ```
+```
 
-- `package.json`
+`tsconfig.eslint.json` 用于 `Typescript` 解析器解析：
 
-  ``` json
-  {
-  	"script": {
-      // . => 要检查的文件路径
-      // --ext .vue,.js,.ts,.jsx,.tsx => 默认只检查 .js 文件，添加拓展
-      // --fix => 检查后进行修复
-      "lint:eslint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
-    }
+``` json
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["**/*", "**/*", "**/*.*.*"],
+  "exclude": ["**/node_modules", "**/dist"]
+}
+
+```
+
+`package.json` 中添加 script ：
+
+``` json
+{
+  // ...
+  "script": {
+    // ...
+    // . => 要检查的文件路径
+    // --ext .js,.jsx,.ts,.tsx,.vue => 默认只检查 .js 文件，添加拓展
+    // --fix => 检查后进行修复
+    "lint:eslint": "eslint . --ext .js,.jsx,.ts,.tsx,.vue --fix"
   }
-  ```
+}
+```
+
+`.eslintignore` 忽略文件：
+
+``` 
+node_modules
+dist
+
+.github
+.husky
+*-lock.yaml
+*-lock.json
+!.eslintrc.js
+!.stylelintrc.js
+!.prettierrc.js
+!.lintstagedrc.js
+!.commitlintrc.js
+
+```
+
+> **`ESLint` 默认忽略对 `.` 开头文件的检查**，所以对于这些文件都需要用 `!` 反向声明忽略。
+
+
+
+可以通过以下命令输出此时 `ESLint` 配置所检查的文件列表：
+
+``` bash
+pnpm eslint . --ext .js,.jsx,.ts,.tsx,.vue --format json > eslint-file-list.json
+
+```
+
+
+
+### 忽略规则
+
+如果需要单独关闭对某个位置的检查：
+
+- `<!-- eslint-disable-eslint 规则 -->` ：在模版中关闭对应语句的检查。
+- `// eslint-disable-line`：放在某一行后，注释仅对该行禁用的对应规则。
+- `/* eslint-disable 规则 */` ：放在 `.js` 文件中的任何代码之前，这将禁用整个文件的对应规则。
+- `/* eslint-disable */` ：置于文件顶部来禁用所有 ESLint 规则。
+
+
+
+## Stylelint
+
+与 `ESLint` 一致，不过是 `CSS` 领域的。
+
+
+
+### `CSS` 属性排序
+
+- `position`
+- `display` and box model
+- `font`, leading, `color`, text
+- `background` and `border`
+- CSS3 properties like `border-radius` and `box-shadow`
+- and a handful of other purely visual properties
+
+
+
+### 适配 BEM 规则
+
+``` json
+const nameRegExpString = '[a-z0-9]+(-[a-z0-9]+)*'
+
+module.exports = {
+  rules: [
+    // 使用注释指定 block 名称
+    'plugin/selector-bem-pattern': {
+      // 'suit' / 'bem', 不管哪种都需要手动指定，因为该插件未给源插件默认指定
+      preset: 'bem',
+			
+    	// 默认 '^[-_a-zA-Z0-9]+$'
+    	componentName: `^${nameRegExpString}$`,
+    
+    	/**
+       * 自定义模式规则
+       * 指定组合的选择器检查规则，其实就是指定class名称规则
+       * 支持正则字符串、返回正则的函数、包含2个选项参数的对象等写法
+       */
+    	componentSelectors: {
+        // 只初始的选择器规则（可以理解为外层的class规则）
+        initial: `^\\.{componentName}(?:__${nameRegExpString})?(?:--${nameRegExpString})?$`,
+        // 可以理解为外层以内的选择器的规则
+        // 如果不指定，则跟 initial 同样的规则
+        combined: `^\\.{componentName}(((?:__${nameRegExpString})(?:--${nameRegExpString})?)|(?:--${nameRegExpString}))$`
+    	},
+ 
+      // utils 类名
+      utilitySelectors: '^\\.u-[a-zA-z]+$',
+    
+			// 忽略的选择器
+      ignoreSelectors: ['^\\.van'],
+  
+  		// 忽略的自定义属性
+      ignoreCustomProperties: []
+    },
+
+    // 解决和 'plugin/selector-bem-pattern' 类名检测的冲突
+  	// 否则可能会一直提示类名需要使用 kebab-case 
+    'selector-class-pattern': null
+  ]
+}
+```
 
 > Tips：
 >
-> 可以使用 `<!-- eslint-disable-eslint 规则 -->` 在模版中关闭对应语句的 `eslint` 检查。
+> 如果是链式选择器，如 `.A.B` ，需要写的正则支持，否则也会视为不符合规范发出警告。
+>
+> 如果伪类写在选择器最后，会被忽略，不影响使用。写在中间则会发出警告。
 
 
 
-## Prettier
+**使用**：
+
+一个文件一个模块：
+
+``` scss
+/** @define FancyComponent */
+:root {
+  --FancyComponent-property: value;
+}
+
+.FancyComponent {}
+
+.FancyComponent-other {}
+```
+
+一个文件多个模块：
+
+``` scss
+/** @define Foo */
+.Foo {}
+/** @end */
+
+.something-something-something {}
+```
+
+Utilities ：
+
+``` scss
+/** @define utilities */
+.u-sizeFill {}
+```
+
+> Tips：
+>
+> 可以添加该注释 `/* postcss-bem-linter: ignore */` 来忽略对某块样式的校验。
+
+
+
+### 依赖安装
+
+首先安装核心工具 `stylelint` ：
+
+```bash
+pnpm i -wD stylelint
+
+```
+
+`SCSS` 标准以及解析 `SCSS` 的能力：
+
+``` bash
+pnpm i -wD stylelint-config-recommended-scss postcss-scss
+
+```
+
+`Vue` 标准以及解析 `Vue` 的能力：
+
+```bash
+pnpm i -wD stylelint-config-recommended-vue postcss-html
+
+```
+
+`CSS` 属性排序：
+
+``` bash
+pnpm i -wD stylelint-config-recess-order
+
+```
+
+适配 `BEM` ：
+
+``` bash
+pnpm i -wD stylelint-selector-bem-pattern
+
+```
+
+
 
 ### 配置
 
+根目录新建 `.stylelintrc.js` 文件，作为 `stylelint` 的配置文件：
+
 ``` js
+const nameRegExpString = '[a-z0-9]+(-[a-z0-9]+)*'
+
+module.exports = {
+  // 拓展合并其它配置
+  extends: [
+    'stylelint-config-recommended-scss',
+    'stylelint-config-recommended-vue',
+    'stylelint-config-recess-order'
+  ],
+  // 用于支持非常规的 css 属性或者用例的插件
+  plugins: ['stylelint-selector-bem-pattern'],
+  // 指定要使用 customSyntax 识别的文件类型
+  // e.g 使用 postcss-scss 识别 scss
+  overrides: [
+    // 解析 SCSS
+    {
+      files: ['*.(scss|css|vue|html)', '**/*.(scss|css|vue|html)'],
+      customSyntax: 'postcss-scss'
+    },
+    // 解析 Vue/HTML 文本
+    {
+      files: ['*.(html|vue)', '**/*.(html|vue)'],
+      customSyntax: 'postcss-html'
+    }
+  ],
+  // 配置要格式化的规则
+  rules: {
+    // 兼容 scss 语法
+    'at-rule-no-unknown': [
+      true,
+      {
+        // 添加 apply 兼容 unocss ，另外需要在 IDE 中关闭 scss 对 unknown at rule 的警告
+        'ignoreAtRules': ['at-root', 'mixin', 'include', 'extend', 'use', 'apply']
+      }
+    ],
+    // 使用注释指定 block 名称
+    'plugin/selector-bem-pattern': {
+      // 'suit' / 'bem', 不管哪种都需要手动指定，因为该插件未给源插件默认指定
+      preset: 'bem',
+      // 默认 '^[-_a-zA-Z0-9]+$'
+      componentName: `^${nameRegExpString}$`,
+      /**
+       * 自定义模式规则
+       * 指定组合的选择器检查规则，其实就是指定class名称规则
+       * 支持正则字符串、返回正则的函数、包含2个选项参数的对象等写法
+       */
+      componentSelectors: {
+        // 只初始的选择器规则（可以理解为外层的class规则）
+        initial: `^\\.{componentName}(?:__${nameRegExpString})?(?:--${nameRegExpString})?$`,
+        // 可以理解为外层以内的选择器的规则
+        // 如果不指定，则跟 initial 同样的规则
+        combined:
+          `^\\.{componentName}(((?:__${nameRegExpString})(?:--${nameRegExpString})?)|(?:--${nameRegExpString}))$`
+      },
+      // utils 类名
+      utilitySelectors: '^\\.u-[a-zA-z]+$'
+    },
+    // 解决和 'plugin/selector-bem-pattern' 类名检测的冲突
+  	// 否则可能会一直提示类名需要使用 kebab-case 
+    'selector-class-pattern': null,
+    // 解决在 style 标签中使用 v-bind 时要求参数一定要小写的问题
+    'value-keyword-case': null
+  },
+  // 缓存结果，只处理有改动的部分
+  cache: true
+}
+```
+
+`package.json` 中添加 script ：
+
+``` json
+{
+  // ...
+  "script": {
+    // ...
+    "lint:style": "stylelint . --fix"
+  }
+}
+```
+
+`.stylelintignore` 忽略文件：
+
+``` 
+node_modules
+dist
+public
+
+*.js
+*.cjs
+*.jsx
+*.ts
+*.tsx
+*.json
+*.md
+*.svg
+*.png
+*.eot
+*.ttf
+*.woff
+*.yaml
+
+```
+
+
+
+### 忽略规则
+
+如果需要单独关闭对某个位置的检查：
+
+- 使用**未限定范围**的禁用注释去关闭所有/单个规则（需要显示地再用注释启用）：
+
+  ``` scss
+  /* stylelint-disable */
+  a {}
+  /* stylelint-enable */
+  
+  /* stylelint-disable selector-max-id, declaration-no-important */
+  #id {
+    color: pink !important;
+  }
+  /* stylelint-enable selector-max-id, declaration-no-important */
+  
+  ```
+
+- 关闭**单行**的规则，不需要再显示启用：
+
+  ``` scss
+  #id { /* stylelint-disable-line */
+    color: pink !important; /* stylelint-disable-line declaration-no-important */
+  }
+  
+  #id {
+    /* 关闭下一行 */
+    /* stylelint-disable-next-line declaration-no-important */
+    color: pink !important;
+  }
+  
+  ```
+
+- 支持复杂、重叠的禁用和启用：
+
+  ``` scss
+  /* stylelint-disable */
+  /* stylelint-enable foo */
+  /* stylelint-disable foo */
+  /* stylelint-enable */
+  /* stylelint-disable foo, bar */
+  /* stylelint-disable baz */
+  /* stylelint-enable baz, bar */
+  /* stylelint-enable foo */
+  
+  ```
+
+- 可以添加描述：
+
+  ``` scss
+  /* stylelint-disable -- Reason for disabling Stylelint. */
+  /* stylelint-disable foo -- Reason for disabling the foo rule. */
+  /* stylelint-disable foo, bar -- Reason for disabling the foo and bar rules. */
+  
+  ```
+
+  
+
+## Prettier
+
+> `Prettier` 是一款固执己见的格式化工具。
+>
+> - 对所有语言一视同仁，无法对规则进行更细粒度的控制。
+> - 与 `Lint` 结合使用的时候，所有错误都会被统一标记为 `prettier/prettier` ，没法进一步细分错误。
+
+我们使用 `Prettier` 来格式化 `ESLint` 和 `Stylelint` 不支持的文件，例如： `Markdown` 、`json` 等。
+
+``` json
 // .prettierrc.js
 module.exports = {
   // 最大行长。通常为 100 - 120，建议 80 。
-  printWidth: 80,
+  printWidth: 100,
   
 	// 缩进使用多少个空格。
   tabWidth: 2,
+  
+  /**
+   * true  - 结尾加分号。
+   * false - 不加。
+   */
+  semi: false,
+  
+  /**
+   * true  - 使用单引号代替双引号。
+   * false - 不使用。
+   */
+  singleQuote: true,
+  
+  /**
+   * 多行情况下在最后一行末尾增加逗号
+   * es5  - 在 es5 数据中加（object, arrays, etc.），Typescript 中的变量不加。
+   * none - 所有都不添加。
+   * all  - 所有能加的地方都加。
+   */
+  trailingComma: 'none',
+  
+  /**
+   * true  - 对象字面量加空格: { foo: bar }
+   * false - 不加: {foo: bar}
+   */
+  bracketSpacing: true,
   
   /**
    * true  - 使用 tab 缩进。
@@ -293,44 +666,12 @@ module.exports = {
   useTabs: false,
   
   /**
-   * true  - 结尾加分号。
-   * false - 不加。
-   */
-  semi: true,
-  
-  /**
-   * true  - 使用单引号代替双引号。
-   * false - 不使用。
-   */
-  singleQuote: false,
-  
-  /**
    * 对象里的 key 是否需要使用引号。
    * as-needed  - 仅在需要时加。
    * consistent - 如果有一个 key 需要，则所有 key 添加。
    * preserve   - 输入什么就是什么。
    */
   quoteProps: 'as-needed',
-  
-  /**
-   * true  - 在 JSX 使用单引号代替双引号。
-   * false - 不使用。
-   */
-  jsxSingleQuote: false,
-  
-  /**
-   * 多行情况下在最后一行末尾增加逗号
-   * es5  - 在 es5 数据中加（object, arrays, etc.），Typescript 中的变量不加。
-   * none - 所有都不添加。
-   * all  - 所有能加的地方都加。
-   */
-  trailingComma: 'es5',
-  
-  /**
-   * true  - 对象字面量加空格: { foo: bar }
-   * false - 不加: {foo: bar}
-   */
-  bracketSpacing: true,
   
   /**
    * true  - HTML 多行元素的最后 '>' 不另起一行。
@@ -345,7 +686,13 @@ module.exports = {
    */
   bracketSameLine: false,
   
-  // 同 bracketSameLine ，作用于 JSX 。
+  /**
+   * true  - 在 JSX 使用单引号代替双引号。
+   * false - 不使用。
+   */
+  jsxSingleQuote: false,
+  
+  // 同 jsxSingleQuote ，作用于 JSX 。
   jsxBracketSameLine: false,
   
   /**
@@ -441,410 +788,122 @@ module.exports = {
 
 
 
-### 安装
+### 依赖安装
 
 ``` bash
-npm install prettier -D
+pnpm i -wD prettier
+
 ```
 
 
-
-### 总结
-
-- 安装
-
-  ``` bash
-  npm install prettier -D
-  ```
-  
-- `.prettierrc.js`
-
-  ``` js
-  module.exports = {
-    printWidth: 100,
-    semi: false,
-    singleQuote: true,
-    singleAttributePerLine: true,
-    trailingComma: 'none',
-    tabWidth: 2
-  }
-  ```
-
-- `.prettierignore`
-
-  ``` 
-  node_modules
-  dist
-  .github
-  .husky
-  *-lock.yaml
-  *-lock.json
-  ```
-
-- `package.json`
-
-  ``` json
-  {
-    "script": {
-      // 检查修复文件
-      "lint:prettier": "prettier . --write"
-    }
-  }
-  ```
-
-  
-
-## Stylelint
 
 ### 配置
 
-常见配置
+根目录新建 `.prettierrc.js` 文件，作为 `prettier` 的配置文件：
 
 ``` js
-// .stylelintrc.js
 module.exports = {
-  // 配置要格式化的规则
-  rules: {},
-  
-  // 拓展合并其它配置
-  extends: [],
-  
-  // 用于支持非常规的 css 属性或者用例的插件
-  plugins: [],
-  
-  // 用于支持将包括在不同文件中（e.g HTML、template）的中的预编译语言等样式转换为类 CSS 语言进行识别
-  // 如果要支持多种，可以使用 overrides 属性
-  customSyntax: ''
-  
-  // 指定要使用 customSyntax 识别的文件类型
-  // e.g 使用 postcss-scss 识别 scss
-  overrides: [
-  	{
-  		files: ['*.scss', '**/*.scss'],
-      customSyntax: 'postcss-scss'
-		}
-  ],
-    
-  // 设置所有 rules 告警的默认严重程度
-  // e.g warging
-  defaultSeverity: 'warning',
-    
-  // 忽略的文件类型
-  // e.g js
-  ignoreFiles: ['**/*.js'],
-    
-  // 当 glob 模式匹配不到任何文件时不会报错
-  allowEmptyInput: true,
-    
-  // 缓存结果，只处理有改动的部分
-  cache: true,
-    
-  // 自动修复
-  fix: true
+  printWidth: 100,
+  tabWidth: 2,
+  semi: false,
+  singleQuote: true,
+  trailingComma: 'none'
 }
+
+```
+
+`.prettierignore` 忽略文件：
+
+``` 
+node_modules
+dist
+.github
+.husky
+*-lock.yaml
+*-lock.json
+
 ```
 
 
 
-### 安装
+## 与 IDE 结合
 
-``` bash
-npm install stylelint -D
-```
+在 `VSCode` 分别安装 `ESLint` 、`Stylelint` 和 `Prettier` 三款插件。
 
+在 `.vscode/extensions.json` 中新增：
 
-
-### SCSS 拓展
-
-- 添加 SCSS 标准
-
-  ``` bash
-  npm install stylelint-config-recommended-scss -D
-  ```
-
-- 兼容 Prettier
-
-  ``` bash
-  npm install stylelint-config-prettier-scss -D
-  ```
-
-- 解析 SCSS
-
-  ``` bash
-  npm install postcss-scss -D
-  ```
-
-``` js
-module.exports = {
-  extends: [
-    'stylelint-config-recommended-scss',
-    'stylelint-config-prettier-scss'
-  ],
-  overrides: [
-    // 解析 SCSS
-    {
-      files: ['*.(scss|css|vue|html)', '**/*.(scss|css|vue|html)'],
-      customSyntax: 'postcss-scss'
-    }
-  ],
-  rules: [
-    // 兼容 scss 语法
-    'at-rule-no-unknown': [
-      true,
-      {
-        'ignoreAtRules': ['at-root', 'mixin', 'include', 'extend']
-      }
-    ]
+``` json
+{
+  "recommendations": [
+    // ...
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "stylelint.vscode-stylelint"
   ]
 }
+
 ```
 
+在 `.vscode/settings.json` 中新增：
 
-
-### Vue / HTML 拓展
-
-- 添加 Vue 标准
-
-  ``` bash
-  npm install stylelint-config-recommended-vue -D
-  ```
-
-- 解析 Vue 和 HTML 中的类 HTML 结构
-
-  ``` bash
-  npm install postcss-html -D
-  ```
-
-``` js
-module.exports = {
-  extends: [
-    'stylelint-config-recommended-vue'
-  ],
-  overrides: [
-    {
-      files: ['*.(html|vue)', '**/*.(html|vue)'],
-      customSyntax: 'postcss-html'
-    }
-  ],
-  rules: {
-    // 解决在 style 标签中使用 v-bind 时要求参数一定要小写的问题
-    'value-keyword-case': null
-  }
-}
-```
-
-
-
-### CSS 属性排序
-
-CSS 属性按一下顺序排序：
-
-- `position`
-- `display` and box model
-- `font`, leading, `color`, text
-- `background` and `border`
-- CSS3 properties like `border-radius` and `box-shadow`
-- and a handful of other purely visual properties
-
-``` bash
-npm install stylelint-config-recess-order -D
-```
-
-``` js
-module.exports = {
-  extends: [
-    'stylelint-config-recess-order'
-  ]
-}
-```
-
-
-
-### 适配 BEM 规则
-
-``` bash
-npm install stylelint-selector-bem-pattern -D
-```
-
-``` js
-const nameRegExpString = '[a-z0-9]+(-[a-z0-9]+)*'
-
-module.exports = {
-  rules: [
-    // 使用注释指定 block 名称
-    'plugin/selector-bem-pattern': {
-      // 'suit' / 'bem', 不管哪种都需要手动指定，因为该插件未给源插件默认指定
-      preset: 'bem',
-			
-    	// 默认 '^[-_a-zA-Z0-9]+$'
-    	componentName: `^${nameRegExpString}$`,
-    
-    	/**
-       * 自定义模式规则
-       * 指定组合的选择器检查规则，其实就是指定class名称规则
-       * 支持正则字符串、返回正则的函数、包含2个选项参数的对象等写法
-       */
-    	componentSelectors: {
-        // 只初始的选择器规则（可以理解为外层的class规则）
-        initial: `^\\.{componentName}(?:__${nameRegExpString})?(?:--${nameRegExpString})?$`,
-        // 可以理解为外层以内的选择器的规则
-        // 如果不指定，则跟 initial 同样的规则
-        combined: `^\\.{componentName}(((?:__${nameRegExpString})(?:--${nameRegExpString})?)|(?:--${nameRegExpString}))$`
-    	},
- 
-      // utils 类名
-      utilitySelectors: '^\\.u-[a-zA-z]+$',
-    
-			// 忽略的选择器
-      ignoreSelectors: ['^\\.van'],
+``` json
+{
+  // 设置默认格式化工具为 Prettier
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
   
-  		// 忽略的自定义属性
-      ignoreCustomProperties: []
-    },
-
-    // 解决和 'plugin/selector-bem-pattern' 类名检测的冲突
-  	// 否则可能会一直提示类名需要使用 kebab-case 
-    'selector-class-pattern': null
-  ]
-}
-```
-
-
-
-> Tips：
->
-> 如果是链式选择器，如 `.A.B` ，需要写的正则支持，否则也会视为不符合规范发出警告。
->
-> 如果伪类写在选择器最后，会被忽略，不影响使用。写在中间则会发出警告。
-
-
-
-**使用**：
-
-一个文件一个模块：
-
-``` scss
-/** @define FancyComponent */
-:root {
-  --FancyComponent-property: value;
-}
-
-.FancyComponent {}
-
-.FancyComponent-other {}
-```
-
-一个文件多个模块：
-
-``` scss
-/** @define Foo */
-.Foo {}
-/** @end */
-
-.something-something-something {}
-```
-
-Utilities ：
-
-``` scss
-/** @define utilities */
-.u-sizeFill {}
-```
-
-> Tips：
->
-> 可以添加该注释 `/* postcss-bem-linter: ignore */` 来忽略对某块样式的校验。
-
-
-
-### 总结
-
-- 安装
-
-  ``` bash
-  npm install stylelint -D
-  npm install stylelint-config-recommended-scss stylelint-config-prettier-scss postcss-scss -D
-  npm install stylelint-config-recommended-vue postcss-html -D
-  npm install stylelint-config-recess-order -D
-  npm install stylelint-selector-bem-pattern -D
-  ```
+  // 默认禁用自动格式化(手动格式化快捷键：Shift + Alt + F)
+  "editor.formatOnSave": false,
+  "editor.formatOnPaste": false,
   
-- `.stylelintrc.js`
-
-  ``` js
-  const nameRegExpString = '[a-z0-9]+(-[a-z0-9]+)*'
+  // 避免使用 prettier 处理 vue 文件的格式化
+  "[vue]": {
+    "editor.defaultFormatter": null
+  },
   
-  module.exports = {
-    extends: [
-      'stylelint-config-recommended-scss',
-      'stylelint-config-prettier-scss',
-      'stylelint-config-recommended-vue',
-      'stylelint-config-recess-order'
-    ],
-    plugins: ['stylelint-selector-bem-pattern'],
-    overrides: [
-      {
-        files: ['*.(scss|css|vue|html)', '**/*.(scss|css|vue|html)'],
-        customSyntax: 'postcss-scss'
-      },
-      {
-        files: ['*.(html|vue)', '**/*.(html|vue)'],
-        customSyntax: 'postcss-html'
-      }
-    ],
-    rules: {
-      'at-rule-no-unknown': [
-        true,
-        {
-          'ignoreAtRules': ['at-root', 'mixin', 'include', 'extend']
-        }
-      ],
-      'plugin/selector-bem-pattern': {
-        preset: 'bem',
-        componentName: `^${nameRegExpString}$`,
-        componentSelectors: {
-          initial: `^\\.{componentName}(?:__${nameRegExpString})?(?:--${nameRegExpString})?$`,
-          combined:
-            `^\\.{componentName}(((?:__${nameRegExpString})(?:--${nameRegExpString})?)|(?:--${nameRegExpString}))$`
-        },
-        utilitySelectors: '^\\.u-[a-zA-z]+$',
-      },
-      'selector-class-pattern': null,
-      'value-keyword-case': null
-    },
-    cache: true
-  }
-  ```
+  // json、yaml 等配置文件保存时自动格式化
+  "[json]": {
+    "editor.formatOnSave": true
+  },
+  "[yaml]": {
+    "editor.formatOnSave": true
+  },
+  "[html]": {
+    "editor.formatOnSave": true
+  },
+  "[markdown]": {
+    "editor.formatOnSave": true
+  },
+  
+  // 启用 ESLint 和 Stylelint 保存自动格式化
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "explicit"
+  },
+  
+  // 启用 eslint 的格式化能力
+  "eslint.format.enable": true,
+  
+	// 指定 eslint 该检测的文件类型(尤其是 vue 文件)。
+  "eslint.probe": ["javascript", "typescript", "vue"],
+  
+  // 指定 stylelint 检测的文件类型(尤其是 vue 文件)。
+  "stylelint.validate": ["css", "scss", "postcss", "vue"],
+  
+   // 行尾默认为 LF 换行符而非 CRLF
+  "files.eol": "\n",
 
-- `.stylelintignore`
+  // 键入 Tab 时插入空格而非 \t
+  "editor.insertSpaces": true,
 
-  ``` 
-  # 默认忽略 node_modules
-  dist
-  *.js
-  *.jsx
-  *.ts
-  *.tsx
-  *.json
-  *.md
-  *.png
-  *.svg
-  *.eot
-  *.ttf
-  *.woff
-  *.yaml
-  ```
+  // 缩进大小：2
+  "editor.tabSize": 2
+}
 
-- `package.json`
+```
 
-  ``` json
-  {
-    "script": {
-      // 检查修复文件
-      "lint:stylelint": "stylelint . --fix"
-    }
-  }
-  ```
+`editor.codeActionsOnSave` 的相关配置，让 `ESLint` 和 `Stylelint` 的**自动修复功能在保存文件时触发。** 当然，部分复杂的错误无法自动修复，需要人工检视。
+
+将默认的格式化工具设为 `Prettier`，但是**禁用自动格式化，避免格式化与自动修复之间的冲突。自动格式化只对非 `ESLint` 和 `Stylelint` 目标的文件开启，** 例如 `json`、`yaml`。
 
 
 
@@ -852,57 +911,39 @@ Utilities ：
 
 对 git staged 状态的文件进行格式化。
 
-- 安装
 
-  ``` bash
-  npm install lint-staged -D
-  ```
 
-- `.lintstagedrc.js`
+### 依赖安装
 
-  ``` js
-  module.exports = {
-    '*.{js,jsx}': [
-      'prettier --write',
-      'eslint --ext .js,.jsx --fix'
-    ],
-    '*.{ts,tsx}': [
-      'prettier --write',
-      'eslint --ext .ts,.tsx --fix'
-    ],
-    '*.vue': [
-      'prettier --write',
-      'eslint --ext .vue --fix',
-      'stylelint --fix'
-    ],
-    '*.{scss,html}': [
-      'prettier --write',
-      'stylelint --fix'
-    ],
-    'package.json': [
-      'prettier --write'
-    ],
-    '*.md': [
-      'prettier --write'
-    ]
-  }
-  ```
+``` bash
+pnpm i -wD lint-staged
 
-- 执行
+```
 
-  ``` bash
-  pnpm exec lint-staged
-  ```
+
+
+### 配置
+
+根目录新建 `.lintstagedrc.js` 文件，作为 `lint-staged` 的配置文件：
+
+``` js
+module.exports = {
+  // 对于 js、ts 脚本文件，应用 eslint
+  '*.{js,jsx,ts,tsx}': ['eslint --ext .js,.jsx,.ts,.tsx --fix'],
+  // 对于 css scss 文件，应用 stylelint
+  '*.{scss,css}': ['stylelint --fix'],
+   // Vue 文件由于同时包含模板、样式、脚本，因此 eslint、stylelint 都要使用
+  '*.vue': ['eslint --ext .vue --fix', 'stylelint --fix'],
+  '*.{html,json,md}': ['prettier --write']
+}
+
+```
 
 
 
 ## commitlint
 
 检查 git 提交信息。
-
-
-
-### 配置
 
 ``` js
 const Configuration = {
@@ -958,100 +999,150 @@ export default Configuration
 
 
 
-### msg 模版
+### Commit 规范
 
-使用 `@commitlint/cz-commitlint` 可以在 commit 的时候提供 msg 模版供选择。
+一般采用 Angular.js 规范：
 
-- 安装
+详细参考：[https://feflowjs.com/zh/guide/rule-git-commit.html](https://feflowjs.com/zh/guide/rule-git-commit.html)
 
-  ``` bash
-  npm install --save-dev @commitlint/cz-commitlint commitizen inquirer@9
-  ```
+```javascript
+<type>(<scope>): <subject>
+<BLANK LINE>
+<body>
+<BLANK LINE>
+<footer>
+       
+```
 
-- 配置 `package.json`
+其中，header 是必需的，body 和 footer 可以省略。
+不管是哪一个部分，任何一行都不得超过72个字符（或100个字符）。这是为了避免自动换行影响美观。
 
-  ``` json
-  {
-    "scripts": {
-      "cz": "git-cz"
-    },
-    "config": {
-      "commitizen": {
-        "path": "@commitlint/cz-commitlint"
-      }
-    }
-  }
-  ```
+可以使用 [commitlint](https://commitlint.js.org/guides/getting-started.html) + [@commitlint/cz-commitlint](https://www.npmjs.com/package/@commitlint/cz-commitlint) 。
 
-- 使用一下命令进行 commit
 
-  ``` bash
-  npm run cz
-  ```
 
+- **Header**
+
+  Header 部分只有一行，包括三个字段：`type`（required）、`scope`（optional）、`subject`（optional）。
+
+  - type：用于说明 commit 的类别，只允许使用下面几个标识。
+
+    | 类型     | 描述                                              |
+    | -------- | ------------------------------------------------- |
+    | build    | 发布版本                                          |
+    | chore    | 改变构建流程、或者增加依赖库、工具等              |
+    | ci       | 持续集成修改                                      |
+    | docs     | 文档修改                                          |
+    | feat     | 新功能（feature）                                 |
+    | fix      | 修补 bug                                          |
+    | perf     | 优化相关，比如提升性能、体验                      |
+    | refactor | 重构（既不是新增功能，也不是修改 bug 的代码改动） |
+    | revert   | 回滚到上一个版本                                  |
+    | style    | 格式（不影响代码运行的变动）                      |
+    | test     | 测试用例修改                                      |
+
+  - scope：用于说明 commit 影响的范围，每个项目对这个范围的定义可能不同。
+
+    如果你的修改影响了不止一个 `scope` ，你可以使用 `*` 代替。
+
+  - subject：commit 目的的简短描述，不超过 50 个字符。
+
+    - 以动词开头，使用第一人称现在时，比如 change ，而不是 changed 或 changes
+    - 第一个字母小写
+    - 结尾不加句号（.）
+
+- **Body**
+
+  Body 部分是对本次 commit 的详细描述，可以分成多行。下面是一个范例。
+
+  ```bash
+  More detailed explanatory text, if necessary.  Wrap it to 
+  about 72 characters or so. 
   
-
-### 总结
-
-- 安装
-
-  ``` bash
-  npm install --save-dev @commitlint/{cli,config-conventional}
-  npm install --save-dev @commitlint/cz-commitlint commitizen inquirer@9
+  Further paragraphs come after blank lines.
+  
+   - Bullet points are okay, too
+   - Use a hanging indent
+   
   ```
 
-- 添加 `commitlint.config.js`
+  > Tips：
+  >
+  > 1. 使用第一人称现在时，比如 change ，而不是 changed 或 changes ；
+  > 2. 与 Header 和 Footer 之间有
+  > 3. 应该说明代码变动的动机，以及与以前行为的对比。
 
-  ``` js
-  module.exports = {
-    extends: ['@commitlint/config-conventional']
-  }
-  ```
+- **Footer**
 
--  配置 `package.json`
+  Footer 部分只用于两种情况：
 
-  ``` json
-  {
-    "scripts": {
-      "cz": "git-cz"
-    },
-    "config": {
-      "commitizen": {
-        "path": "@commitlint/cz-commitlint"
-      }
+  1. 不兼容变动
+
+    如果当前代码与上一个版本不兼容，则 Footer 部分以 `BREAKING CHANGE` 开头，后面是对变动的描述、以及变动理由和迁移方法。
+
+    ```bash
+  BREAKING CHANGE: isolate scope bindings definition has changed.
+    
+    To migrate the code follow the example below:
+  
+    Before:
+    
+    scope: {
+      myAttr: 'attribute',
     }
-  }
-  ```
+    
+    After:
+    
+    scope: {
+      myAttr: '@',
+    }
+    
+    The removed `inject` wasn't generaly useful for directives so there should be no code using it.
+    
+    ```
 
-- commit
+  2. 关闭 Issue
 
-  ``` bash
-  npm run cz
-  ```
+    如果当前 commit 针对某个 issue，那么可以在 Footer 部分关闭这个 issue。
 
-- 执行
+    ``` bash
+  Closes #234
+  
+    ```
 
-  ``` bash
-  npx commitlint --edit
-  ```
+    也可以一次性关闭多个 issue 。
 
-> Tips:
->
-> 需要 commitlint 以及其拓展的配置版本 > **12.1.2** 。
+    ``` bash
+  Close #123, #245, #992
+  
+    ```
+
+
+### 依赖安装
+
+``` bash
+pnpm i -wD @commitlint/config-conventional @commitlint/cli
+
+```
+
+
+
+### 配置
+
+根目录新建 `.commitlintrc.js` 文件，作为 `commitlint` 的配置文件：
+
+``` js
+module.exports = {
+  extends: ['@commitlint/config-conventional']
+}
+
+```
 
 
 
 ## husky
 
 通过 git hook 在 git 操作之前执行一些自定义操作。
-
-
-
-### 安装
-
-``` bash
-npm install husky -D
-```
 
 
 
@@ -1065,12 +1156,14 @@ npm install husky -D
     "prepare": "husky install"
   }
 }
+
 ```
 
 如果当前已经 install 过，可以单独手动执行一次生成 `.husky` 目录
 
 ``` bash
-npm prepare
+pnpm prepare
+
 ```
 
 > Tips：
@@ -1088,104 +1181,45 @@ npm prepare
 > ``` bash
 > which volta
 > ```
-
-
-
-### pre-commit
-
-添加 `pre-commit` 钩子在 commit 前执行命令。
-
-在 git commit 之前执行 lint-staged ：
-
-在 `.husky` 文件夹下新建 `pre-commit` 文件。
-
-``` 
-# pre-commit
-npx lint-staged
-```
-
-
-
-> Tips:
 >
-> 如果不想真的提交，而是进行测试，可以在 `pre-commit` 文件最后一行加上 `exit 1` 。
+> husky > v9.0
 
 
 
-### commit-msg
+- **pre-commit**
 
-检测 commit message 。
+  添加 `pre-commit` 钩子在 commit 前执行命令。
 
-使用 `commitlint` 校验 commit message ：
+  在 git commit 之前执行 lint-staged ：
 
-在 `.husky` 文件夹下新建 `commit-msg` 文件。
+  在 `.husky` 文件夹下新建 `pre-commit` 文件。
 
-``` 
-# commit-msg
-npx commitlint --edit
-```
-
-
-
-## VSCode
-
-针对以上 lint ，VSCode 编译器的相关配套插件和设置。
-
-
-
-### 插件
-
-`ESLint`
-
-`Prettier`
-
-`Stylelint`
-
-`Vue-official`
-
-
-
-### 配置文件
-
-`.vscode/*`
-
-- 在 vscode 打开项目时提示要安装插件
-
-  `extensions.json`
-
-  ``` json
-  {
-    "recommendations": [
-      "vue.volar",
-      "dbaeumer.vscode-eslint",
-      "esbenp.prettier-vscode",
-      "stylelint.vscode-stylelint",
-      
-      // 如果有使用 `unocss` ，可添加
-      "antfu.unocss"
-    ]
-  }
-  ```
-
-- 保存时自动格式化代码
-
-  `settings.json`
-
-  ``` json
-  {
-    "editor.codeActionsOnSave": {
-      "source.fixAll": "never",
-      "source.fixAll.eslint": "explicit",
-      "source.fixAll.stylelint": "explicit"
-    },
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "[vue]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "stylelint.validate": ["css", "scss", "vue", "html"],
-    "editor.formatOnSave": true
-  }
-  ```
-
+  ``` 
+  # pre-commit
+  pnpm exec lint-staged
   
+  ```
+
+  > 如果不想真的提交，而是进行测试，可以在 `pre-commit` 文件最后一行加上 `exit 1` 。
+
+
+- commit-msg
+
+  检测 commit message 。
+
+  使用 `commitlint` 校验 commit message ：
+
+  在 `.husky` 文件夹下新建 `commit-msg` 文件。
+
+  ``` 
+  # commit-msg
+  pnpm exec commitlint --edit
+  
+  ```
+
+
+
+
+
+
 

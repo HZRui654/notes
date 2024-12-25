@@ -1,6 +1,17 @@
 # .browserslistrc
 
-https://browsersl.ist/
+可以在 [Browserlist](https://browsersl.ist/) 查询配置对应的浏览器覆盖率。
+
+
+
+在根目录下新增 `.browserslistrc` ：
+
+``` 
+# Browsers that we support
+
+> 0.2%, defaults, fully supports es6-module
+
+```
 
 
 

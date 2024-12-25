@@ -631,13 +631,14 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
 
+  /* system-ui: use system default font */
   /* -apple-system: use macOs default font first. */
   /* macOs: 'Helvetica Neue', 'PingFang SC' */
   /* windows: 'Microsoft Yahei' */
   /* both macOs and windows: Tahoma, Arial */
   /* linux: 'WenQuanYi Micro Hei' */
   /* callback: sans-serif */
-  font-family: -apple-system, 'Helvetica Neue', Tahoma, Arial, 'PingFang SC', 'Microsoft Yahei',
+  font-family: system-ui, -apple-system, 'Helvetica Neue', Tahoma, Arial, 'PingFang SC', 'Microsoft Yahei',
     'WenQuanYi Micro Hei', sans-serif;
 
   line-height: 1.5;
@@ -721,28 +722,32 @@ html {
 }
 
 body {
-  /* for h5 */
+  /* for H5 */
   padding-top: env(safe-area-inset-top);
   /* 提前声明滚动容器的 `padding-right` 为滚动条宽度，可以防止滚动条的出现导致屏幕抖动 */
+  /* Pre-declaring the padding-right of the scrolling container as the scrollbar width can prevent screen jitter caused by the appearance of the scrollbar */
   padding-right: calc(100vw - 100% - env(safe-area-inset-right));
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
 
+  /* system-ui: use system default font */
   /* -apple-system: use macOs default font first. */
   /* macOs: 'Helvetica Neue', 'PingFang SC' */
   /* windows: 'Microsoft Yahei' */
   /* both macOs and windows: Tahoma, Arial */
   /* linux: 'WenQuanYi Micro Hei' */
   /* callback: sans-serif */
-  font-family: -apple-system, 'Helvetica Neue', Tahoma, Arial, 'PingFang SC', 'Microsoft Yahei',
+  font-family: system-ui, -apple-system, 'Helvetica Neue', Tahoma, Arial, 'PingFang SC', 'Microsoft Yahei',
     'WenQuanYi Micro Hei', sans-serif;
   
   line-height: 1.5;
 
   /* 渲染字体是否使用抗锯齿。antialiased: 在深色背景时，渲染浅色文字使用抗锯齿，使其看起来更亮。 */
+  /* Whether to use anti-aliasing for font rendering. antialiased: On dark backgrounds, anti-aliasing is used to render light-colored text, making it appear brighter */
   -webkit-font-smoothing: antialiased;
 
   /* 微信 h5 上下滑动卡顿 */
+  /* There is stuttering when scrolling up and down on WeChat H5 pages */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -930,6 +935,97 @@ button,
 
 
 
+## 常用属性值
+
+- `padding/margin` ：`8px` ，`16px` ，`24px`
+- `font-size` ：`12px` ，`14px` ，`16px`
+- `color` ：`#333` ，`#666` ，`#999`
+
+
+
+## font family
+
+**文件格式**：
+
+- `woff2` ：适合现代网页使用，压缩更高效，文件更小，加载速度更快。是网页开发中的最佳选择。
+- `ttf` ：适合需要高兼容性和高质量显示的应用，如桌面应用程序或打印文档。文件较大，网页加载性能较低。
+
+
+
+**Variable fonts** 是一种字体格式，允许单个字体文件支持多个风格变化（如粗细、宽度、斜体等）。相比传统的每种风格都需要一个独立的字体文件，variable fonts 大大减少了文件的大小，并增加了灵活性。以下字体文件使用的都是改格式。否则需要引入所有字体大小的字符集。
+
+``` css
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 200 900; /* 允许的粗细范围 */
+  font-stretch: 75% 100%; /* 允许的宽度范围 (可选) */
+  src: url('../fonts/Unbounded.woff') format('woff2'),
+  		 url('./fonts/Unbounded.ttf') format('truetype');
+  font-display: swap;
+  /* 指定字体应用于哪些 Unicode 字符范围。可以为特定的字符集或范围加载和应用特定的字体。优化网页的字体加载，减少不必要的字体数据传输，提高性能。 */
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+```
+
+
+
+**使用**：
+
+``` css
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 200 900;
+  src: url('../fonts/Unbounded.woff') format('woff2');
+  font-display: swap;
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 200 900;
+  src: url('../fonts/Unbounded.woff') format('woff2');
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 200 900;
+  src: url('../fonts/Unbounded.woff') format('woff2');
+  font-display: swap;
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 200 900;
+  src: url('../fonts/Unbounded.woff') format('woff2');
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* latin */
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 200 900;
+  src: url('../fonts/Unbounded.woff') format('woff2');
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+```
+
+
+
 ## font weight
 
 推荐使用字重描述符而不是数字：
@@ -995,9 +1091,9 @@ button,
 ```css
 /* 单行文字省略 */
 p {
-  white-space: nowrap
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 
@@ -1084,5 +1180,58 @@ select {
     <single-animation-fill-mode> ||
     <single-animation-play-state> ||
     [ none | <keyframes-name> ]
+```
+
+
+
+## Flex 动态高度
+
+Flexbox 模式下，子元素 A 和 B 左右分布，让父元素的高度只被 A 撑开，B 的最高高度不超过 A 。
+```css
+.parent {
+  display: flex;
+  // 子元素高度铺满
+  align-items: stretch;
+}
+
+.a {
+  flex: 1;
+}
+
+.b {
+  position: relative;
+  flex-shrink: 0;
+  width: 150px;
+  margin-left: 16px;
+}
+
+// 在 B 元素下新增绝对定位的子元素 C ，C 高度为 100% ，在 C 中定义其他子元素
+// 这样就可以让 B 不撑开父元素，在高度超过时生成滚动条
+.b__c {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+```
+
+
+
+## 渐变色边框
+
+优雅实现渐变色边框，不需要使用伪类元素。
+
+如果正常使用 `border-image` ，无法兼容 `border-radius` ，所以只能寻求其它方案。
+
+以下代码就是指在 `border-box` 下使用边框的渐变色，在 `padding-box` 使用正常背景色 `white` 覆盖在渐变色上，这样子就只有两个 box 之间的 border 可以显示出渐变色。
+
+``` css
+.border-box {
+  background-image: linear-gradient(to right, white, white), linear-gradient(180deg, #D0D5DD 0%, rgba(208, 213, 221, 0) 100%);
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
 ```
 

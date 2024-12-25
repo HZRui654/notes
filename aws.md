@@ -1,18 +1,18 @@
 # AWS
 
-## 部署 monorepo
+## 切换 node 版本
 
-### .npmrc
-
-在 repo 根目录下的  `.npmrc` 文件，添加以下配置
-
-``` 
-node-linker=hoisted
-```
-
-关于 `.npmrc` 更多配置，可以看 [pnpm .npmrc](https://pnpm.io/next/npmrc) 。
+- 打开 `AWS Amplify` ；
+-  打开 `Build settings` ；
+- 下滑打开 `Build image setting` ；
+- 点击 `Edit` ；
+- 在 `Build image` 下的下拉框选择 `Build image` ，默认是 `Amazon Linux:2023(default)` ；
+- 在文本框中输入要使用的 node 版本（ e.g. `node:18.16.1` ），保存；
+- 重新发布。
 
 
+
+## 使用 pnpm
 
 ### build settings
 
@@ -29,6 +29,20 @@ applications:
 ```
 
 
+
+### .npmrc
+
+在 repo 根目录下的  `.npmrc` 文件，添加以下配置
+
+``` 
+node-linker=hoisted
+```
+
+关于 `.npmrc` 更多配置，可以看 [pnpm .npmrc](https://pnpm.io/next/npmrc) 。
+
+
+
+## 部署 monorepo
 
 ### environment variable
 
@@ -65,3 +79,13 @@ ExampleMonorepo
 6. 选择 **Next** ；
 7. 在 **Review** 页面，选择 **Save and deploy** 。
 
+
+
+## 部署 Nuxt
+
+1. 登陆 AWS 管理后台的 Amplify console 。
+2. 在右上角 **Host web app** 中选择 **New app** 。
+3. 在 **Host your web app** 页面，选择 Git 供应商，然后选择对应要部署的分支。
+4. 选择 app 的名称，确保自动检测出 build settings ，并且可以选择设置自己必要的环境变量。
+5. 可以选择 Enable SSR logging 去启用服务端的日志记录（ SSR 服务端的报错都可以在 cloudwatch 中查看）。
+6. 在 **Review** 页面，选择 **Save and deploy** 。
