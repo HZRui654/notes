@@ -1033,8 +1033,6 @@ button,
 - `font-weight` 不是告诉浏览器用多高的字重来绘制文字，而是让浏览器在 `font-family` 字符集中匹配符合字重要求的字体；
 - 通常情况下，一个字体只会包含少数可用的字重，如果存在的字重没有可以直接匹配 `font-weight` 的，则会通过算法规则匹配邻近的可用字重。
 
-
-
 - 100 - Thin
 - 200 - Extra Light (Ultra Light)
 - 300 - Light
@@ -1168,22 +1166,6 @@ select {
 
 
 
-## animation 简写
-
-``` css
-<single-animation> =
-    <time> ||
-    <timing-function> ||
-    <time> ||
-    <single-animation-iteration-count> ||
-    <single-animation-direction> ||
-    <single-animation-fill-mode> ||
-    <single-animation-play-state> ||
-    [ none | <keyframes-name> ]
-```
-
-
-
 ## Flex 动态高度
 
 Flexbox 模式下，子元素 A 和 B 左右分布，让父元素的高度只被 A 撑开，B 的最高高度不超过 A 。
@@ -1234,4 +1216,122 @@ Flexbox 模式下，子元素 A 和 B 左右分布，让父元素的高度只被
   border-radius: 8px;
 }
 ```
+
+
+
+## 响应式数值 clamp()
+
+`clamp(min, first, max)` 把一个值限制在一个上限和下限之间，当这个值超过最小值和最大值的范围时，在最小值和最大值之间选择一个值使用。它接收三个参数：最小值、首选值、最大值。
+
+> 优势：无需媒体查询、平滑过度、代码简洁。
+
+可以嵌套使用 `min()` ，`max()` ，`calc()` 等 css 函数。
+
+``` css
+.container {
+  /* 响应式内边距 */
+  padding: clamp(1rem, 3vw, 3rem);
+  /* 响应式宽度 */
+  width: clamp(320px, 80vw, 1200px);
+}
+
+```
+
+
+
+## 布局间距 gap
+
+`gap: <row-gap> <col-gap>` 布局间距。适用于 `flex` 、`grid` 和 `column` 多列布局。
+
+> 可以代替传统的 margin ，避免临边距叠加的问题。
+
+`<col-gap>` 没有传入时，默认值等同于 `rou-gap` 。
+
+``` html
+<html>
+  <head>
+    <style type="text/css">
+      #flexbox {
+        display: flex;
+        flex-wrap: wrap;
+        width: 300px;
+        gap: 20px 5px;
+      }
+
+      #flexbox > div {
+        border: 1px solid green;
+        background-color: lime;
+        flex: 1 1 auto;
+        width: 100px;
+        height: 50px;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <div id="flexbox">
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </body>
+</html>
+```
+
+
+
+## 控制宽高比 aspect-radio
+
+`aspect-radio: 宽 / 高` ，传入宽高比，元素会在宽度 `width` 变化以后，按比例动态调整 `height` 。
+
+> 适用于：响应式图片布局，视频容器，保持元素固定比例。
+
+```css
+/* 常见的 16:9 视频容器 */
+.video-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+```
+
+
+
+## 简化选择器 :is()/:where()
+
+传入要选中的选择器列表。
+
+```css
+/* 之前的写法 */
+.card h2,
+.card h3,
+.card h4,
+.card h5,
+.card h6 {
+  margin-bottom: 16px;
+}
+
+/* 使用 :is() 简化后 */
+.card :is(h2, h3, h4, h5, h6) {
+  margin-bottom: 16px;
+}
+
+/* 使用 :where() */
+:where(.card, .panel, .box) p {
+  line-height: 1.5;
+}
+
+```
+
+> `:is` 和 `:where` 的主要区别在于优先级：
+>
+> `:is` 的优先级由传入的选择器列表中，优先级最高的那个选择器决定；
+>
+> `:where` 的优先级始终为 **0** 。
+>
+> 优势：可以减少代码重复，灵活控制优先级。
 
