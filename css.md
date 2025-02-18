@@ -943,6 +943,44 @@ button,
 
 
 
+## Columns 布局
+
+又称「多列」布局，可以将元素分成多栏。
+
+- `columns` ：可以通过指定数量 `column-count` 将布局分成多少栏，或者指定宽度 `column-width` 后自动分割；
+
+  ``` css
+  p {
+    columns: 3;
+  }
+  
+  /* 按最小 100px 去分栏，即每栏的宽度 >= 100px */
+  p {
+    columns: 100px;
+  }
+  
+  ```
+
+- `column-gap` ：可以设置分栏之间的间隔宽度，默认有间隔；
+
+  ``` css
+  p {
+    column-gap: 0px;
+  }
+  
+  ```
+
+- `column-rule` ：可以设置分割线，分割线不占据分栏或者间隔的空间。
+
+  ``` css
+  p {
+    column-rule: 1px solid red;
+  }
+  
+  ```
+
+
+
 ## font family
 
 **文件格式**：
@@ -1072,6 +1110,8 @@ button,
   - `::-webkit-scrollbar-track-piece` ：滚动条轨道未被滑块覆盖的部分。
 
   - `::-webkit-scrollbar-corner` ：垂直滚动条和水平滚动条交汇的部分。
+
+  - `::-webkit-resizer` ：滚动条交汇处用于拖动调整元素大小的小控件。
 
 - **自定滚动条**
 
@@ -1334,4 +1374,18 @@ Flexbox 模式下，子元素 A 和 B 左右分布，让父元素的高度只被
 > `:where` 的优先级始终为 **0** 。
 >
 > 优势：可以减少代码重复，灵活控制优先级。
+
+
+
+## 突出选中文本
+
+``` css
+::selection {
+    background-color: #ffcc00;
+    color: #333;
+}
+
+```
+
+
 

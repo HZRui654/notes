@@ -275,7 +275,46 @@ controller.abort()
 
 ## 封装（TS）
 
-utils/request.ts
+希望以 `const [error, result] = await api.getUserInfo(id)` 的方式调用；支持「请求重试」、「重复请求过滤」以及「请求取消功能」。
+
+
+
+### 流程思路
+
+1. 调用请求函数，处理请求参数
+2. 请求拦截
+   - 修改请求头
+   - 配置用户标识等
+3. 发起请求
+4. 响应拦截
+   - 网络错误处理
+   - 授权错误处理
+   - 普通错误处理
+   - 代码异常处理
+5. 请求完成，返回参数处理
+
+> 1，5 的`参数处理`又分为「针对所有接口统一处理」和「针对单个接口处理」。既理论上应该可以传入回调函数处理数据。
+
+
+
+### 目录结构
+
+``` 
+├── api      
+⎪   ├── path
+⎪   ⎪    ├── user.ts
+⎪   ⎪    ├── ...
+⎪   ├── index.ts
+⎪   ├── server.ts
+⎪   ├── tools.ts
+├── ...
+```
+
+
+
+### 代码
+
+`utils/request.ts`
 
 ``` typescript
 import axios from 'axios'
@@ -359,7 +398,7 @@ export default new Request()
 
 
 
-## 使用
+### 使用
 
 types.ts
 

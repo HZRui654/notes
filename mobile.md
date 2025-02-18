@@ -389,6 +389,12 @@ module.exports = {
 
 ## 第三方库
 
+### 调试工具
+
+[vConsole](https://www.npmjs.com/package/vconsole)
+
+
+
 ### 下载文件
 
 **[fileSaver.js](https://github.com/eligrey/FileSaver.js)**
@@ -795,6 +801,35 @@ input {
 
 
 
+### IOS audio 无法自动播放、循环播放
+
+ios 手机在使用 `audio` 或者 `video` 播放的时候，个别机型无法实现自动播放，可使用以下代码 `hack` 。
+
+``` javascript
+// 解决ios audio无法自动播放、循环播放的问题
+var music = document.getElementById('video');
+var state = 0;
+
+document.addEventListener('touchstart', function(){
+    if(state==0){
+        music.play();
+        state=1;
+    }
+}, false);
+
+document.addEventListener('WeixinJSBridgeReady', function () {
+    music.play();
+}, false);
+
+//循环播放
+music.onended = function () {
+    music.load();
+    music.play();
+}
+```
+
+
+
 ### 手机底部刘海和页面背景色不一致
 
 通过指定 body 的背景色来解决。
@@ -997,38 +1032,11 @@ body {
 
 
 
-### 软键盘顶起页面，收起未回落
-
-在 Android 设备上，点击 input 框弹出键盘时，可能会将页面顶起来，导致页面样式错乱。失去焦点时，键盘收起，键盘区域空白，未回落。
-
-原因：键盘不能回落问题出现在 iOS 12+ 和 wechat 6.7.4+ 中，而在**微信 H5 开发**中是比较常见的 Bug。
-
-兼容原理：1.判断版本类型 2.更改滚动的可视区域。
-
-解决方案：
-
-通过监听页面高度变化，强制恢复成弹出前的高度。
-
-``` javascript
-const originalHeight = document.documentElement.clientHeight || document.body.clientHeight
-
-window.onresize = function() {
-    const resizeHeight = document.documentElement.clientHeight || document.body.clientHeight
-
-    if (resizeHeight < originalHeight) {
-        document.documentElement.style.height = originalHeight + 'px';
-        document.body.style.height = originalHeight + 'px';
-    }
-}
-```
-
-
-
 ### line-height 实现文字垂直居中时文字偏上
 
 实际这个Bug一直存在，没有好的解决方案，详情见 Android 浏览器下 line-height 垂直居中为什么会偏离 ？
 
-解决方案：使用 flex 布局代替。
+解决方案：添加 `padding-top: 1px` 或使用 flex 布局代替。
 
 
 
@@ -1042,6 +1050,24 @@ window.onresize = function() {
 }
 ```
 
+如果这个方法失效了，是**因为 IOS 手机会在 transform 的时候导致 border-radius 失效**。
+
+可以给使用动画效果，即带 transform 的元素的父元素添加以下 CSS：
+
+``` css
+-webkit-transform:rotate(0deg);
+```
+
+
+
+### 点击后有边框
+
+``` css
+button:focus {
+    outline: none;
+}
+```
+
 
 
 ### 滚动穿透
@@ -1050,72 +1076,72 @@ window.onresize = function() {
 
 原理：用户滚动时浏览器会去滚动一切它可以滚动的元素。一般分为两种，**目标 element 的滚动**和 **document 的滚动**。当目标 element 滚动到不可以再继续的时候，就会去滚动 document 。
 
-这个问题一直很无解，只能hack去兼容。
-
 解决方案：
 
-1. 先锁住body
+1. `touch-action` ：默认情况下，平移（滚动）和缩放手势由浏览器专门处理，但是可以通过 CSS 特性 touch-action 来改变触摸手势的行为。
 
    ``` css
-   body,.no-scroll {
-     overflow: hidden;
-     height: 100%;
+   /* 禁用滚动元素的父元素的滚动手势 */
+   .parent {
+     touch-action: none;
    }
+   
    ```
 
-2. 还原 body 滚动区域
+2. 使用 `preventDefault` 来阻止关联事件的默认行为。
 
    ``` javascript
-   / 获取滚动区域的容器元素
-   const container = document.querySelector('.container');
+   const parent = document.querySelector('.parent')
+   const scrollBox = document.querySelector('.content')
    
-   // 获取滚动区域的内容元素
-   const content = document.querySelector('.content');
+   parent.addEventListener('touchmove', (e) => {
+     // Step 1: 阻止父元素默认事件
+     e.preventDefault()
+   })
    
-   // 记录滚动位置
-   let scrollTop = 0
+   scrollBox.addEventListener('touchmove', (e) => {
+     // Step 2: 阻止冒泡
+     // 子元素可以继续滚动，但是阻止该事件冒泡
+     e.stopPropagation()
+   })
    
-   // 禁止滚动穿透
-   function disableScroll() {
-     // 记录当前滚动位置
-     scrollTop = window.pageYOffset || document.documentElement.scrollTop
-     
-     // 设置滚动区域容器的样式，将其高度设置为固定值，并设置滚动条样式
-     container.style.height = '100%'
-     container.style.overflow = 'hidden'
-     
-     // 阻止窗口滚动
-     document.body.classList.add('no-scroll')
-     document.body.style.top = `-${scrollTop}px`
-   }
-   
-   // 启用滚动穿透
-   function enableScroll() {
-     // 恢复滚动区域容器的样式
-     container.style.height = ''
-     container.style.overflow = ''
-   
-     // 允许窗口滚动
-     document.body.classList.remove('no-scroll')
-     document.body.style.top = ''
-   
-     // 恢复滚动位置
-     window.scrollTo(0, scrollTop)
-   }
-   
-   // 示例使用，当某个事件触发时禁止滚动穿透
-   function disableScrollEvent() {
-     disableScroll()
-   }
-   
-   // 示例使用，当某个事件触发时启用滚动穿透
-   function enableScrollEvent() {
-     enableScroll()
-   }
-   
-   ```
 
-   
+
+
+### 滚动溢出
+
+在滚动元素滚到底部或顶部时，再往下或往上滚动，也会触发页面的滚动，这种现象称之为滚动链（scroll chaining）, 但是感觉滚动溢出（overscroll）这个名字更言辞达意。
+
+解决方案：在滚动元素滚动到底部或顶部时使用 `preventDefault` 阻止滚动事件冒泡。
+
+``` javascript
+let initialPageY = 0
+
+scrollBox.addEventListener('touchstart', (e) => {
+    initialPageY = e.changedTouches[0].pageY
+})
+
+scrollBox.addEventListener('touchmove', (e) => {
+    const deltaY = e.changedTouches[0].pageY - initialPageY
+    
+    // 禁止向上滚动溢出
+    if (e.cancelable && deltaY > 0 && scrollBox.scrollTop <= 0) {
+        e.preventDefault()
+    }
+
+    // 禁止向下滚动溢出
+    if (
+        e.cancelable &&
+        deltaY < 0 && 
+        scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight
+    ) {
+        e.preventDefault()
+    }
+})
+
+```
+
+
 
 ### 软键盘挡住输入框
 
@@ -1210,4 +1236,32 @@ export default function riseInput(input: HTMLElement, target: HTMLElement) {
   })
 }
 ```
+
+
+
+### 软键盘顶起页面，收起未回落
+
+在 Android 设备上，点击 input 框弹出键盘时，可能会将页面顶起来，导致页面样式错乱。失去焦点时，键盘收起，键盘区域空白，未回落。
+
+原因：键盘不能回落问题出现在 iOS 12+ 和 wechat 6.7.4+ 中，而在**微信 H5 开发**中是比较常见的 Bug。
+
+兼容原理：1.判断版本类型 2.更改滚动的可视区域。
+
+解决方案：
+
+通过监听页面高度变化，强制恢复成弹出前的高度。
+
+``` javascript
+const originalHeight = document.documentElement.clientHeight || document.body.clientHeight
+
+window.onresize = function() {
+    const resizeHeight = document.documentElement.clientHeight || document.body.clientHeight
+
+    if (resizeHeight < originalHeight) {
+        document.documentElement.style.height = originalHeight + 'px';
+        document.body.style.height = originalHeight + 'px';
+    }
+}
+```
+
 

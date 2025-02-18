@@ -1,8 +1,129 @@
-# 各种需求对应使用的库
+# 各种需求对应工具
 
 
 
-## 日期计算（[datejs](https://dayjs.fenxianglu.cn/)）
+## Log
+
+**制定日志输出规范**
+
+1. **日志等级**
+
+   根据消息的重要性分类，由低到高：
+
+   - `DEBUG` ：详细的开发时信息，用于调试应用。
+   - `INFO` ：重要事件的简要信息，如系统启动、配置等。
+   - `WARN` ：系统能正常运行，但有潜在错误的情况。
+   - `ERROR` ：由于严重的问题，某些功能无法正常运行。
+   - `FATAL` ：非常严重的问题，可能导致系统崩溃。
+
+2. **日志内容**
+
+   应该包含足够的信息，以便于开发者理解发生了什么：
+
+   - `时间戳` ：精确到毫秒的事件发生时间。
+   - `日志等级` ：当前日志消息的等级。
+   - `消息描述` ：描述事件的详细信息。
+   - `错误堆栈` ：如果是错误，提供错误堆栈信息。
+
+3. **日志格式**
+
+   ``` bash
+   [时间戳] [日志等级] [消息内容] [错误堆栈]
+   ```
+
+   ``` bash
+   [2025-01-017T12:00:00.000Z] [ERROR] Failed to load user data. {stack}
+   ```
+
+4. **日志输出**
+
+   使用 `console` ：
+
+   - `console.debug` ：用于 `DEBUG` 级别。
+   - `console.info` ：用于 `INFO` 级别。
+   - `console.warn` ：用于 `WARN` 级别。
+   - `console.error` ：用于 `ERROR` / `FATAL` 级别。
+
+5. **封装**
+
+   ``` typescript
+   class Logger {
+      static level = 'DEBUG' // 默认为DEBUG级别
+   
+     static setLevel(newLevel) {
+       this.level = newLevel
+     }
+     
+     static shouldLog(level) {
+       const levels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL']
+       return levels.indexOf(level) >= levels.indexOf(this.level)
+     }
+     
+     static log(level, message, error) {
+       if (!this.shouldLog(level)) {
+         return
+       }
+       
+       const timestamp = new Date().toISOString()
+       const stack = error ? error.stack : ''
+       const formattedMessage = `[${timestamp}] [${level}] ${message} ${stack}`
+   
+       switch (level) {
+         case 'DEBUG':
+           console.debug(formattedMessage)
+           break
+         case 'INFO':
+           console.info(formattedMessage)
+           break
+         case 'WARN':
+           console.warn(formattedMessage)
+           break
+         case 'ERROR':
+         case 'FATAL':
+           console.error(formattedMessage)
+           break
+         default:
+           console.log(formattedMessage)
+       }
+     }
+   
+     static debug(message) {
+       this.log('DEBUG', message)
+     }
+   
+     static info(message) {
+       this.log('INFO', message)
+     }
+   
+     static warn(message) {
+       this.log('WARN', message)
+     }
+   
+     static error(message, error) {
+       this.log('ERROR', message, error)
+     }
+   
+     static fatal(message, error) {
+       this.log('FATAL', message, error)
+     }
+   }
+   
+   // 生产环境中设置日志等级
+   if (process.env.NODE_ENV === 'production') {
+     Logger.setLevel('WARN')
+   }
+   
+   // 使用示例
+   Logger.info('Application is starting...')
+   Logger.error('Failed to load user data', new Error('Network Error'))
+   
+   ```
+
+
+
+## 日期计算
+
+[datejs](https://dayjs.fenxianglu.cn/)
 
 ### 标准化时间
 
@@ -281,7 +402,7 @@
 
 ### 最佳实践
 
-#### 从用户获取日期和时间
+**从用户获取日期和时间**
 
 为了消除任何混淆，建议使用 `new Date(year, month, day, hours, minutes, seconds, milliseconds)` 格式来创建日期，这是使用 `Date` 构造函数时能够做到的最明确的方式。
 
@@ -304,7 +425,7 @@ console.log(dateTime) // Fri Oct 12 2012 12:30:00 GMT+0800 (中国标准时间)
 
 
 
-#### 仅获取日期
+**仅获取日期**
 
 如果只获取日期（例如用户的生日），最好将格式转换为有效的 ISO 日期格式，以消除任何可能导致日期在转换为 UTC 时向前或向后移动的时区信息。
 
@@ -318,7 +439,7 @@ const birthDate = new Date(ISODate).toISOString() // 2012-20-12T00:00:00.000Z
 
 
 
-#### 存储日期
+**存储日期**
 
 始终以 UTC 格式存储日期时间，始终将 ISO 日期字符串或时间戳保存到数据库。实践证明，在后端存储本地时间是一个坏主意，最好让浏览器在前端处理到本地时间的转换。
 
@@ -339,7 +460,9 @@ const dateISO = date.toISOString() // 2012-12-13T02:20:00.000Z
 
 
 
-## 加解密（[crypto-js](https://github.com/brix/crypto-js)）
+## 加解密
+
+[crypto-js](https://github.com/brix/crypto-js)
 
 **安装使用：**
 
@@ -419,19 +542,17 @@ import CryptoJs from 'crypto-js'
     \- 对于加密端，应该包括：加密秘钥长度，秘钥，IV值，加密模式，PADDING 方式。
     \- 对于解密端，应该包括：解密秘钥长度，秘钥，IV值，解密模式，PADDING 方式。
 
-  
-
-  **总结**
-
-  加密 IV 和解密 IV 不同的时候，并不影响解密是否成功，但是解密的结果有差别。
-
-  修改 padding，加密解密的 padding 换成 NoPadding，发现解密之后生成 utf8 字符串出错。
-
-  加密为 Pkcs7 和 ZeroPadding 时，加密后的字符串变化显著，这时解密用任何 padding 模式，都可以成功解密。
-
-  AES 加密解密的秘钥有一对，一个是 IV 一个是 KEY ，并且他们的长度都有严格要求。
-
-  Padding 的作用似乎不只是补齐最后，如果自己什么都对，但是加密失败，可以尝试不同 Padding。
+  >  **总结**
+  >
+  > 加密 IV 和解密 IV 不同的时候，并不影响解密是否成功，但是解密的结果有差别。
+  >
+  > 修改 padding，加密解密的 padding 换成 NoPadding，发现解密之后生成 utf8 字符串出错。
+  >
+  > 加密为 Pkcs7 和 ZeroPadding 时，加密后的字符串变化显著，这时解密用任何 padding 模式，都可以成功解密。
+  >
+  > AES 加密解密的秘钥有一对，一个是 IV 一个是 KEY ，并且他们的长度都有严格要求。
+  >
+  > Padding 的作用似乎不只是补齐最后，如果自己什么都对，但是加密失败，可以尝试不同 Padding。
 
   
 
@@ -463,7 +584,9 @@ import CryptoJs from 'crypto-js'
 
 
 
-## 长文本分段加密解密（[EncryptLong](https://www.npmjs.com/package/encryptlong)）
+### 长文本分段加密解密
+
+[EncryptLong](https://www.npmjs.com/package/encryptlong)
 
 **基于 jsencrypt 扩展长文本分段加解密功能。**
 
@@ -491,7 +614,9 @@ npm install encryptlong -S
 
   
 
-## 复制剪切板（[copy-text-to-clipboard](https://www.npmjs.com/package/copy-text-to-clipboard)）
+## 复制剪切板
+
+[copy-text-to-clipboard](https://www.npmjs.com/package/copy-text-to-clipboard)
 
 **Copy text to the clipboard in modern browsers.**
 
@@ -511,9 +636,47 @@ button.addEventListener('click', () => {
 
 
 
-## 二维码（[qr-code-styling](https://www.npmjs.com/package/qr-code-styling#api-documentation)）
+### 适配低版本浏览器
 
-**这个库主要是为了生成二维码并且添加 logo 图片。**
+`navigator.clipboard` 兼容性不是很好，低版本浏览器不支持。
+
+``` javascript
+const copyText = (text: string) => {
+  return new Promise(resolve => {
+    if (navigator.clipboard?.writeText) {
+      return resolve(navigator.clipboard.writeText(text))
+    }
+    // 创建输入框
+    const textarea = document.createElement('textarea')
+    document.body.appendChild(textarea)
+    // 隐藏此输入框
+    textarea.style.position = 'absolute'
+    textarea.style.clip = 'rect(0 0 0 0)'
+    // 赋值
+    textarea.value = text
+    // 选中
+    textarea.select()
+    // 复制
+    document.execCommand('copy', true)
+    textarea.remove()
+    return resolve(true)
+  })
+}
+```
+
+
+
+## 二维码
+
+[node-qrcode](https://www.npmjs.com/package/qrcode)
+
+
+
+### 添加 logo
+
+[qr-code-styling](https://www.npmjs.com/package/qr-code-styling#api-documentation)
+
+**生成二维码并且添加 logo 图片。**
 
 `Vue3` ：
 
@@ -648,15 +811,220 @@ a {
 
 
 
-## 页面浏览导航（[Driver.js](https://driverjs.com/)）
+## 页面浏览导航
 
-## 拖拽（[@formkit/drag-and-drop](https://drag-and-drop.formkit.com/)）
+[Driver.js](https://driverjs.com/)
 
-## 流程图（[LogicFlow](https://docs.logic-flow.cn/docs/#/zh/guide/start)）
 
-## 打字机效果（[Typed.js](https://www.npmjs.com/package/typed.js)）
 
-## 日历（[FullCalendar](https://fullcalendar.io/)）
+## 拖拽
+
+[@formkit/drag-and-drop](https://drag-and-drop.formkit.com/)
+
+
+
+## 流程图
+
+[LogicFlow](https://docs.logic-flow.cn/docs/#/zh/guide/start)
+
+
+
+## 打字机效果
+
+[Typed.js](https://www.npmjs.com/package/typed.js)
+
+
+
+## 日历
+
+[FullCalendar](https://fullcalendar.io/) ：日历 UI 和交互；
+
+[lunar](https://www.npmjs.com/package/lunar-typescript) ：支持获取各类日历数据，例如农历、佛历等。
+
+
+
+### 踩坑
+
+- 没办法直接通过修改 `visibleRange` 的方式，直接将日历的时间范围重置到不包含日历 `current date` 的范围，会报错。
+
+  ``` javascript
+  // 日历的 current date 可以使用 `calendar.getDate()` 获取
+  const currentDate = calendar.getDate()
+  
+  // 该范围需要包含 currentDate ，否则报错。
+  calendar.setOption('visibleRange', {
+    start: '2017-04-01',
+    end: '2017-04-05'
+  })
+  
+  // 使用 `calendar.destory` 卸载，再使用 `calendar.render` 重新渲染的方式也无法解决。
+  
+  ```
+
+  **解决方案**：不使用手动设置 `setOption` 的方式去修改 `visibleRange` ，而是创建 `calendar` 的时候给 `visibleRange` 传入回调函数，函数会在 `current date` 改变时触发，这样就可以通过 `calendar.gotoDate()` 改变 `current date` 来修改 `visibleRange` 。
+
+  ``` javascript
+  const calendar = new Calendar(calendarEl, {
+    initialView: 'multiMonth',
+    visibleRange: function(currentDate) {
+      // 当前需求：用户选中时间范围，然后日历展示该时间范围所涉及的所有月份
+      // calendarMonthRange: 用户选中时间范围
+      const { calendarMonthRange: range } = this
+      const visibleRange = {
+        start: range[0],
+        end: range[1]
+      }
+      
+      // 将日历开始日期设置成起始月份第一天
+      // Keep year and month, change the date to '01'
+      // e.g. 2024-01-26 => 2024-01-01
+      let start = range[0].split('-')
+      start[2] = '01'
+      visibleRange.start = start.join('-')
+  
+      // 因为 calendar 的时间范围参数都是包含起始时间，不包含结束时间
+      // 所以将日历结束日期设置成结束月份的下一个月份第一天
+      // Change the time to next month's first date
+      // e.g. 2024-03-03 => 2024-04-01
+      let end = range[1].split('-').map((val) => Number(val))
+      end[0] = end[1] === 12 ? end[0] + 1 : end[0] // If month is 12, year add 1
+      end[1] = end[1] === 12 ? 1 : end[1] + 1 // Change to 1 if month is 12, else add 1
+      end[2] = 1
+      visibleRange.end = end
+        .map((val, index) => (index > 0 ? String(val).padStart(2, '0') : String(val)))
+        .join('-')
+  
+      return visibleRange
+    }
+  })
+  
+  // 需要修改日历时间范围时
+  // 1. 修改 `calendarMonthRange`
+  // 2. 通过 `calendar.gotoDate` 修改 calendar 的 `current date` 触发 `visibleRange` 回调函数重新计算日历范围
+  calendar.gotoDate(this.calendarMonthRange[0])
+  
+  ```
+
+
+
+## 富文本编辑器
+
+- [jodit](https://www.npmjs.com/package/jodit)
+
+  Jodit是一款使用纯TypeScript编写的（无需使用其他库），美观实用的所见即所得（WYSIWYG）开源富文本编辑器，支持中文，超强自定义。
+
+- [TinyMCE](https://www.npmjs.com/package/@tinymce/tinymce-vue)
+
+  TinyMCE是一个轻量级的基于浏览器的所见即所得编辑器，由JavaScript写成。它对IE6+和Firefox1.5+都有着非常良好的支持。
+
+  功能齐全，界面美观，就是文档是英文的，对开发人员英文水平有一定要求。
+
+
+
+## 图片预览
+
+[viewerjs](https://www.npmjs.com/package/viewerjs)
+
+
+
+## CSS Loading
+
+[CSS Loaders](https://css-loaders.com/) ：600 多种单 element loaders
+
+
+
+##  EventBus
+
+[Mitt](https://www.npmjs.com/package/mitt)
+
+
+
+## Validator
+
+### PhoneNumber
+
+[google-libphonenumber](https://www.npmjs.com/package/google-libphonenumber) ：格式化和验证手机号码。
+
+
+
+### Email
+
+[email-validator](https://www.npmjs.com/package/email-validator) ：校验 Email 。
+
+``` javascript
+import * as EmailValidator from 'email-validator'
+
+EmailValidator.validate('test@email.com')
+
+```
+
+
+
+## uuid
+
+[uuid](https://www.npmjs.com/package/uuid)
+
+
+
+## 大屏适配方案
+
+**三大常用方式：**
+
+- **vw/vh**：按照设计稿尺寸，将 `px` 按比例计算转为 `vw/vh` 。
+
+  **优点：**可以动态计算图表的宽高，字体等，灵活性较高，当屏幕比例跟 ui 稿不一致时，不会出现两边留白情况
+
+  **缺点：**每个图表都需要单独做字体、间距、位移的适配，比较麻烦
+
+  
+
+- **scale**：目前**效果最好**的方案，整个页面按比例缩放。
+
+  **优点：**代码量少，适配简单 、一次处理后不需要在各个图表中再去单独适配
+
+  **缺点：**留白，有事件热区偏移
+
+  **解决留白问题：**假设当前 width 缩放 scale = 0.8 铺满，height 缩放后有白边。
+
+  解决思路就是设置 height 的高度，使其缩放后等于页面高度 clientHeight 。
+
+  1. 假设 height 为 h ，可以得到公式：`h * scale = clientHeight` 
+  2. 将 height 设置成 `h = clientHeight / scale`  再缩放即可
+
+  如果是 width 留白也同理，使用 `clientWidth` 进行计算即可。
+
+  ``` javascript
+  function keepFit(designWidth, designHeight, renderDom) {
+    let clientHeight = document.documentElement.clientHeight
+    let clientWidth = document.documentElement.clientWidth
+    let scale = 1
+    
+    if (clientWidth / clientHeight < designWidth / designHeight) {
+      // 高度有白边
+      scale = (clientWidth / designWidth)
+      document.querySelector(renderDom).style.height = `${clientHeight / scale}px`
+    } else {
+      // 宽度有白边
+      scale = (clientHeight / designHeight)
+      document.querySelector(renderDom).style.width = `${clientWidth / scale}px`;
+    }
+    
+    document.querySelector(renderDom).style.transform = `scale(${scale})`;
+  }
+  
+  ```
+
+  
+
+- **rem + vw/vh**：动态计算 `html 根 font-size` ，页面中使用 `rem` 单位，图表中通过 `vw/vh` 动态计算字体、间距和位移等。
+
+  **优点：**布局的自适应代码量少，适配简单
+
+  **缺点：**留白，有时图表需要单独适配字体
+
+
+
+> 留白：页面的内容区域始终和设计稿是同个比例，所以当屏幕比例和设计稿不同时，屏幕超出的部分就变成空白区域。
 
 
 

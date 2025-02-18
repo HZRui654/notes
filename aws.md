@@ -1,5 +1,30 @@
 # AWS
 
+## amplify.yml
+
+``` yaml
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm install pnpm@9 -g
+        - pnpm i
+    build:
+      commands:
+        - pnpm build:$BUILD_ENV
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      
+```
+
+
+
 ## 切换 node 版本
 
 - 打开 `AWS Amplify` ；
