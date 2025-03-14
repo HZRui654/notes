@@ -8,6 +8,21 @@ npm create vue@latest
 
 
 
+## 找不到 component 或其相应的类型声明
+
+添加 `shims-vue.d.ts`
+
+``` typescript
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue';
+  const component: DefineComponent<{}, {}, any>;
+  export default component;
+}
+
+```
+
+
+
 ## 自动引入组件
 
 [`unplugin-vue-components`](https://www.npmjs.com/package/unplugin-vue-components) ：可以自动引入组件，并且已经集成了市面上很多常见的组件库。

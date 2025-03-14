@@ -25,18 +25,6 @@ frontend:
 
 
 
-## 切换 node 版本
-
-- 打开 `AWS Amplify` ；
--  打开 `Build settings` ；
-- 下滑打开 `Build image setting` ；
-- 点击 `Edit` ；
-- 在 `Build image` 下的下拉框选择 `Build image` ，默认是 `Amazon Linux:2023(default)` ；
-- 在文本框中输入要使用的 node 版本（ e.g. `node:18.16.1` ），保存；
-- 重新发布。
-
-
-
 ## 使用 pnpm
 
 ### build settings
@@ -64,6 +52,18 @@ node-linker=hoisted
 ```
 
 关于 `.npmrc` 更多配置，可以看 [pnpm .npmrc](https://pnpm.io/next/npmrc) 。
+
+
+
+## 切换 node 版本
+
+- 打开 `AWS Amplify` ；
+-  打开 `Build settings` ；
+- 下滑打开 `Build image setting` ；
+- 点击 `Edit` ；
+- 在 `Build image` 下的下拉框选择 `Build image` ，默认是 `Amazon Linux:2023(default)` ；
+- 在文本框中输入要使用的 node 版本（ e.g. `node:18.16.1` ），保存；
+- 重新发布。
 
 
 

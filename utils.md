@@ -670,6 +670,30 @@ const copyText = (text: string) => {
 
 [node-qrcode](https://www.npmjs.com/package/qrcode)
 
+``` vue
+<template>
+	<canvas ref="qrCodeContainer"></canvas>
+</template>
+
+<script setup lang="ts">
+import { ref, useTemplate, watch } from 'vue'
+import { useMedia } from '@/common/hooks'
+import QRCode from 'qrcode'
+
+const qrCode = ref('your qr code')
+const container = useTemplate<HTMLCanvasElement>('qrCodeContainer')
+const isPc = useMedia() // Determine whether the screen is PC size
+function createQrCode() {
+  QRCode.toCanvas(container.value, qrCode.value, {
+    width: isPc.value ? 224 : 240
+  })
+}
+watch(container, (refEl) => refEl && createQrCode())
+watch(isPc, () => createQrCode())
+</script>
+
+```
+
 
 
 ### 添加 logo
@@ -716,10 +740,11 @@ import type {
 const options = reactive({
   width: 220,
   height: 220,
-  type: 'svg' as DrawType,
+  type: 'svg' as DrawType, // 或者 cavas ，但是 cavas 没有 svg 这么清晰
   data: 'http://qr-code-styling.com',
+  // shape: 'square', // 或者 'circle' ，二维码形状，默认方型
   image: '/favicon.ico',
-  // margin: 10,
+  // margin: 10, // type 为 cavas 时的边距
   // qrOptions: {
     // typeNumber: 0 as TypeNumber,
     // mode: 'Byte' as Mode,
@@ -767,10 +792,9 @@ const options = reactive({
     // },
   // }
 })
-const extension = ref<FileExtension>('svg')
 let qrCode: QRCodeStyling | null
 
-const qrCodeContent = useTemplateRef('qrCodeRef')
+const qrCodeContent = useTemplateRef<HTMLDivElement>('qrCodeRef')
 onMounted(() => {
   if (!qrCodeContent.value) return
 
@@ -785,6 +809,8 @@ watch(
   }
 )
 
+// For download
+const extension = ref<FileExtension>('svg')
 function download() {
   qrCode?.download({ extension: extension.value })
 }
@@ -806,6 +832,45 @@ a {
   color: #42b983;
 }
 </style>
+
+```
+
+
+
+## 条形码
+
+[jsbarcode](https://www.npmjs.com/package/jsbarcode)
+
+``` vue
+<template>
+	<svg
+ 		:id="BARCODE_ID"
+    ref="barcodeImg"
+  ></svg>
+</template>
+
+<script setup lang="ts">
+import { ref, watchEffect } from 'vue'
+import JsBarcode from 'jsbarcode'
+
+const barcode = ref('33292928100020000000001118960729964900286435')
+const barcodeImg = ref<HTMLImageElement>()
+const BARCODE_ID = 'boleto-barcode'
+
+watchEffect(() => {
+  if (barcodeImg.value && barcode.value) {
+    JsBarcode(`#${BARCODE_ID}`, barcode.value, {
+      format: 'ITF',
+      width: 0.9,
+      height: 83,
+      fontSize: 13,
+      margin: 5,
+      fontOptions: 'lighter',
+      textMargin: 0
+    })
+  }
+})
+</script>
 
 ```
 
@@ -945,6 +1010,35 @@ a {
 
 [google-libphonenumber](https://www.npmjs.com/package/google-libphonenumber) ：格式化和验证手机号码。
 
+``` javascript
+import { PhoneNumberUtil } from 'google-libphonenumber'
+
+/**
+  * format phone
+  * 格式化手机
+  *
+  * @param {string} phone backend returned
+  * @returns formatted phone and country code
+  */
+formatPhone(phone) {
+  const params = {
+    phone: '',
+    code: ''
+  }
+  if (!phone) return params
+  try {
+    const phoneUtil = PhoneNumberUtil.getInstance()
+    const number = phoneUtil.parseAndKeepRawInput(phone)
+    params.code = phoneUtil.getRegionCodeForNumber(number)?.toLowerCase() ?? ''
+    params.phone = number.getNationalNumber() ? String(number.getNationalNumber()) : ''
+  } catch (err) {
+    // console.log(err)
+  }
+  return params
+}
+
+```
+
 
 
 ### Email
@@ -963,6 +1057,20 @@ EmailValidator.validate('test@email.com')
 ## uuid
 
 [uuid](https://www.npmjs.com/package/uuid)
+
+简单的实现方式：
+
+``` javascript
+const UUIDGeneratorBrowser = () =>
+  ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+    (
+      c ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+    ).toString(16)
+  )
+
+UUIDGeneratorBrowser() // '7982fcfe-5721-4632-bede-6000885be57d'
+```
 
 
 
@@ -1025,6 +1133,24 @@ EmailValidator.validate('test@email.com')
 
 
 > 留白：页面的内容区域始终和设计稿是同个比例，所以当屏幕比例和设计稿不同时，屏幕超出的部分就变成空白区域。
+
+
+
+## 获取 Route params
+
+``` javascript
+const getURLParameters = (url) =>
+  (url.match(/([^?=&]+)(=([^&]*))/g) || []).reduce(
+    (a, v) => (
+      (a[v.slice(0, v.indexOf('='))] = v.slice(v.indexOf('=') + 1)), a
+    ),
+    {}
+  )
+
+getURLParameters('google.com') // {}
+getURLParameters('http://url.com/page?name=Adam&surname=Smith') // {name: 'Adam', surname: 'Smith'}
+
+```
 
 
 
