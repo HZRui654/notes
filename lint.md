@@ -292,8 +292,9 @@ pnpm eslint . --ext .js,.jsx,.ts,.tsx,.vue --format json > eslint-file-list.json
 
 如果需要单独关闭对某个位置的检查：
 
-- `<!-- eslint-disable-eslint 规则 -->` ：在模版中关闭对应语句的检查。
-- `// eslint-disable-line`：放在某一行后，注释仅对该行禁用的对应规则。
+- `<!-- eslint-disable-eslint 规则 -->` ：在模版中关闭对应 eslint 规则的检查。
+- `// eslint-disable-line`：放在某一行之后，禁用对该行检查。
+- `// eslint-disable-next-line` ：放在某一行之上，禁用对该行检查。
 - `/* eslint-disable 规则 */` ：放在 `.js` 文件中的任何代码之前，这将禁用整个文件的对应规则。
 - `/* eslint-disable */` ：置于文件顶部来禁用所有 ESLint 规则。
 
